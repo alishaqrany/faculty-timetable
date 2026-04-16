@@ -4,13 +4,13 @@ session_start();
 
 // التحقق من وجود معرف الجلسة للمستخدم المسجل
 if (!isset($_SESSION['member_id'])) {
-    header("Location: login.php");
+    header("Location: ../login.php");
     exit();
 }
 
 // التحقق من وجود معرف القسم في العنوان
 if (!isset($_GET['id'])) {
-    header("Location: view_departments.php");
+    header("Location: departments.php");
     exit();
 }
 

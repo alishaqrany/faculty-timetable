@@ -8,7 +8,7 @@
     </div>
     <div class="nav-links">
     <a href="departments/departments.php"> الاقسام</a>
-    <a href="brunches/brunches.php"> الشعب</a>
+    <a href="sections/sections.php"> الشعب</a>
     <a href="levels/levels.php"> الفرق</a>
         <a href="members/faculty_members.php">اعضاء هيئة التدريس</a>
         <a href="sessions/sessions.php">الفترات</a>

@@ -6,11 +6,13 @@ session_start();
 
 // التحقق من وجود معرف الجلسة للمستخدم المسجل
 if (!isset($_SESSION['member_id'])) {
-    header("Location: login.php"); // إعادة توجيه المستخدم إلى صفحة تسجيل الدخول إذا لم يكن مسجل الدخول
+    header("Location: ../login.php"); // إعادة توجيه المستخدم إلى صفحة تسجيل الدخول إذا لم يكن مسجل الدخول
     exit();
 }
 
 // Define the sessions with their start time, end time, and duration
+$tableName = "sessions";
+
 $sessions = array(
     array("session_name" => "8:10", "start_time" => "8:00", "end_time" => "10:00", "duration" => 2),
     array("session_name" => "10:12", "start_time" => "10:00", "end_time" => "12:00", "duration" => 2),

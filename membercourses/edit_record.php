@@ -4,7 +4,7 @@ session_start();
 
 // التحقق من وجود معرف الجلسة للمستخدم المسجل
 if (!isset($_SESSION['member_id'])) {
-    header("Location: login.php");
+    header("Location: ../login.php");
     exit();
 }
 

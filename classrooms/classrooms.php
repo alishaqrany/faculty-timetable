@@ -6,7 +6,7 @@ session_start();
 
 // التحقق من وجود معرف الجلسة للمستخدم المسجل
 if (!isset($_SESSION['member_id'])) {
-    header("Location: login.php");
+    header("Location: ../login.php");
     exit();
 }
 
@@ -95,7 +95,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </head>
 <body>
 
-    <?php include '../navbar.php'; ?>
+    <?php include 'navbar.php'; ?>
 
     <h1>إضافة قاعة دراسية جديدة</h1>
     <form method="POST" action="">

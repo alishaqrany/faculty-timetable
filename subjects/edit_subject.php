@@ -1,5 +1,11 @@
 <?php
 require_once("../db_config.php");
+session_start();
+
+if (!isset($_SESSION['member_id'])) {
+    header("Location: ../login.php");
+    exit();
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     if (isset($_GET['subject_id'])) {

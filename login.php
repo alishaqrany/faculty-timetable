@@ -3,23 +3,38 @@ session_start();
 require_once('db_config.php');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $username = $_POST['username'];
+    $username = trim($_POST['username']);
     $password = $_POST['password'];
 
-    $query = "SELECT * FROM users WHERE username = '$username'";
-    $result = mysqli_query($conn, $query);
+    try {
+        $stmt = mysqli_prepare($conn, "SELECT * FROM users WHERE username = ? LIMIT 1");
+        if ($stmt) {
+            mysqli_stmt_bind_param($stmt, "s", $username);
+            mysqli_stmt_execute($stmt);
+            $result = mysqli_stmt_get_result($stmt);
 
-    if ($result && mysqli_num_rows($result) == 1) {
-        $row = mysqli_fetch_assoc($result);
-        if (password_verify($password, $row['password'])) {
-            $_SESSION['member_id'] = $row['member_id'];
-            header("Location: index.php");
-            exit();
+            if ($result && mysqli_num_rows($result) == 1) {
+                $row = mysqli_fetch_assoc($result);
+                if (password_verify($password, $row['password'])) {
+                    $_SESSION['member_id'] = $row['member_id'];
+                    header("Location: index.php");
+                    exit();
+                } else {
+                    echo "كلمة المرور غير صحيحة.";
+                }
+            } else {
+                echo "اسم المستخدم غير صحيح.";
+            }
+
+            mysqli_stmt_close($stmt);
         } else {
-            echo "كلمة المرور غير صحيحة.";
+            echo "اسم المستخدم غير صحيح.";
         }
-    } else {
-        echo "اسم المستخدم غير صحيح.";
+
+    } catch (mysqli_sql_exception $e) {
+        // يحدث هذا غالباً عند عدم إنشاء الجداول بعد التثبيت.
+        echo "قاعدة البيانات غير مكتملة. يرجى تشغيل صفحة التثبيت install.php أولاً.";
+
     }
 }
 ?>

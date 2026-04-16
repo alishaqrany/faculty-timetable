@@ -4,7 +4,7 @@ session_start();
 
 // التحقق من وجود معرف الجلسة للمستخدم المسجل
 if (!isset($_SESSION['member_id'])) {
-    header("Location: login.php");
+    header("Location: ../login.php");
     exit();
 }
 
@@ -12,18 +12,23 @@ $message = "";
 $message_type = "";
 
 // التحقق من وجود معرف العضو في العنوان
-if (!isset($_GET['id'])) {
+if (!isset($_GET['id']) || !ctype_digit($_GET['id'])) {
     header("Location: index.php");
     exit();
 }
 
-$member_id = $_GET['id'];
+$member_id = (int)$_GET['id'];
 
 // جلب بيانات العضو من قاعدة البيانات
-$query = "SELECT fm.*, u.username, u.password FROM faculty_members fm LEFT JOIN users u ON fm.member_id = u.member_id WHERE fm.member_id = '$member_id'";
-$result = mysqli_query($conn, $query);
+$stmt = mysqli_prepare($conn, "SELECT fm.*, u.username, u.password FROM faculty_members fm LEFT JOIN users u ON fm.member_id = u.member_id WHERE fm.member_id = ?");
+$result = false;
+if ($stmt) {
+    mysqli_stmt_bind_param($stmt, "i", $member_id);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+}
 
-if (mysqli_num_rows($result) == 1) {
+if ($result && mysqli_num_rows($result) == 1) {
     $row = mysqli_fetch_assoc($result);
     $member_name = $row['member_name'];
     $academic_degree = $row['academic_degree'];
@@ -37,38 +42,52 @@ if (mysqli_num_rows($result) == 1) {
     exit();
 }
 
+if ($stmt) {
+    mysqli_stmt_close($stmt);
+}
+
 // التحقق من إرسال النموذج وتحديث البيانات في قاعدة البيانات
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $member_name = mysqli_real_escape_string($conn, $_POST['member_name']);
-    $academic_degree = mysqli_real_escape_string($conn, $_POST['academic_degree']);
-    $join_date = mysqli_real_escape_string($conn, $_POST['join_date']);
-    $ranking = mysqli_real_escape_string($conn, $_POST['ranking']);
-    $role = mysqli_real_escape_string($conn, $_POST['role']);
-    $username = mysqli_real_escape_string($conn, $_POST['username']);
+    $member_name = trim($_POST['member_name']);
+    $academic_degree = trim($_POST['academic_degree']);
+    $join_date = trim($_POST['join_date']);
+    $ranking_raw = trim((string)($_POST['ranking'] ?? ''));
+    $role = trim($_POST['role']);
+    $username = trim($_POST['username']);
     $password = !empty($_POST['password']) ? password_hash($_POST['password'], PASSWORD_DEFAULT) : $hashed_password;
 
-    // تحديث بيانات العضو في جدول faculty_members
-    $updateQuery = "
-    UPDATE faculty_members SET
-    member_name = '$member_name',
-    academic_degree = '$academic_degree',
-    join_date = '$join_date',
-    ranking = '$ranking',
-    role = '$role'
-    WHERE member_id = '$member_id'
-    ";
+    $allowed_degrees = ["استاذ", "استاذ مساعد", "مدرس", "معيد"];
+    $allowed_roles = ["استاذ المادة", "معاون"];
 
-    $updateResult = mysqli_query($conn, $updateQuery);
+    $valid_join_date = ($join_date === '') || (preg_match('/^\\d{4}-\\d{2}-\\d{2}$/', $join_date) && checkdate((int)substr($join_date, 5, 2), (int)substr($join_date, 8, 2), (int)substr($join_date, 0, 4)));
+    $valid_ranking = ($ranking_raw === '') || ctype_digit($ranking_raw);
+
+    if ($member_name === '' || $username === '' || !in_array($academic_degree, $allowed_degrees, true) || !in_array($role, $allowed_roles, true) || !$valid_join_date || !$valid_ranking) {
+        $_SESSION['message'] = "حدث خطأ أثناء تحديث البيانات: بيانات غير صالحة.";
+        $_SESSION['message_type'] = "error";
+        header("Location: faculty_members.php");
+        exit();
+    }
+
+    $ranking = ($ranking_raw === '') ? 0 : (int)$ranking_raw;
+
+    // تحديث بيانات العضو في جدول faculty_members
+    $updateStmt = mysqli_prepare($conn, "UPDATE faculty_members SET member_name = ?, academic_degree = ?, join_date = ?, ranking = ?, role = ? WHERE member_id = ?");
+    $updateResult = false;
+    if ($updateStmt) {
+        mysqli_stmt_bind_param($updateStmt, "sssisi", $member_name, $academic_degree, $join_date, $ranking, $role, $member_id);
+        $updateResult = mysqli_stmt_execute($updateStmt);
+        mysqli_stmt_close($updateStmt);
+    }
 
     // تحديث بيانات المستخدم في جدول users
-    $updateUserQuery = "
-    UPDATE users SET
-    username = '$username',
-    password = '$password'
-    WHERE member_id = '$member_id'
-    ";
-
-    $updateUserResult = mysqli_query($conn, $updateUserQuery);
+    $updateUserStmt = mysqli_prepare($conn, "UPDATE users SET username = ?, password = ? WHERE member_id = ?");
+    $updateUserResult = false;
+    if ($updateUserStmt) {
+        mysqli_stmt_bind_param($updateUserStmt, "ssi", $username, $password, $member_id);
+        $updateUserResult = mysqli_stmt_execute($updateUserStmt);
+        mysqli_stmt_close($updateUserStmt);
+    }
 
     if ($updateResult && $updateUserResult) {
         $_SESSION['message'] = "تم تحديث بيانات العضو بنجاح!";

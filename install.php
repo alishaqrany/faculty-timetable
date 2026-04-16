@@ -171,3 +171,137 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
 }
 ?>
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إعداد النظام</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            background: #f5f7fb;
+            color: #222;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 30px auto;
+            padding: 0 16px 24px;
+        }
+
+        .card {
+            background: #fff;
+            border: 1px solid #e3e7ef;
+            border-radius: 10px;
+            padding: 18px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+
+        h1 {
+            margin: 0 0 16px;
+            font-size: 24px;
+        }
+
+        h2 {
+            margin: 0 0 14px;
+            font-size: 20px;
+        }
+
+        .hint {
+            margin: 0 0 12px;
+            color: #555;
+            font-size: 14px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 12px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        input {
+            width: 100%;
+            box-sizing: border-box;
+            border: 1px solid #cfd7e6;
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 14px;
+        }
+
+        button {
+            margin-top: 14px;
+            border: 0;
+            border-radius: 8px;
+            background: #0d6efd;
+            color: #fff;
+            font-size: 14px;
+            padding: 10px 14px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #0b5ed7;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>إعداد النظام لأول مرة</h1>
+
+        <div class="card">
+            <h2>1) إعداد الاتصال بقاعدة البيانات</h2>
+            <p class="hint">أدخل بيانات MySQL أولاً لحفظ ملف db_config.php.</p>
+            <form method="POST" action="">
+                <div class="grid">
+                    <div>
+                        <label for="db_host">الخادم</label>
+                        <input type="text" id="db_host" name="db_host" value="localhost" required>
+                    </div>
+                    <div>
+                        <label for="db_user">اسم المستخدم</label>
+                        <input type="text" id="db_user" name="db_user" value="root" required>
+                    </div>
+                    <div>
+                        <label for="db_pass">كلمة المرور</label>
+                        <input type="password" id="db_pass" name="db_pass">
+                    </div>
+                    <div>
+                        <label for="db_name">اسم قاعدة البيانات</label>
+                        <input type="text" id="db_name" name="db_name" value="timetable1" required>
+                    </div>
+                </div>
+                <button type="submit">حفظ إعدادات قاعدة البيانات</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <h2>2) إنشاء الجداول وحساب المدير</h2>
+            <p class="hint">بعد حفظ الاتصال، أنشئ الجداول وأضف أول حساب مدير.</p>
+            <form method="POST" action="">
+                <div class="grid">
+                    <div>
+                        <label for="admin_user">اسم مستخدم المدير</label>
+                        <input type="text" id="admin_user" name="admin_user" required>
+                    </div>
+                    <div>
+                        <label for="admin_pass">كلمة مرور المدير</label>
+                        <input type="password" id="admin_pass" name="admin_pass" required>
+                    </div>
+                </div>
+                <button type="submit">إنشاء الجداول وحساب المدير</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,5 +1,11 @@
 <?php
 require_once("../db_config.php");
+session_start();
+
+if (!isset($_SESSION['member_id'])) {
+    header("Location: ../login.php");
+    exit();
+}
 
 // التحقق من وجود معرف العضو في العنوان
 if (!isset($_GET['id'])) {
