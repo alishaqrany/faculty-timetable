@@ -1,0 +1,298 @@
+<?php
+/**
+ * Install Wizard for Timetable Management System v2
+ * 
+ * Multi-step installer: checks requirements, DB setup, runs migrations & seeds.
+ * After successful install, redirects to login.
+ */
+session_start();
+
+define('APP_ROOT', dirname(__DIR__));
+
+// Load core Database class
+require_once APP_ROOT . '/core/Database.php';
+
+$step    = $_GET['step'] ?? '1';
+$error   = '';
+$success = '';
+$dbCfg   = require APP_ROOT . '/config/database.php';
+
+// ─── Step Handlers ──────────────────────────────────────────────────────────────
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if ($step === '1') {
+        // Requirements check — just move to next step
+        header('Location: install.php?step=2');
+        exit;
+    }
+
+    if ($step === '2') {
+        // Save DB config & test connection
+        $host = trim($_POST['host'] ?? 'localhost');
+        $user = trim($_POST['username'] ?? 'root');
+        $pass = $_POST['password'] ?? '';
+        $name = trim($_POST['database'] ?? 'timetable_v2');
+
+        if (!$host || !$user || !$name) {
+            $error = 'يرجى ملء جميع الحقول المطلوبة.';
+        } else {
+            // Test bare connection (no DB selected yet)
+            try {
+                $testConn = new mysqli($host, $user, $pass);
+                if ($testConn->connect_error) {
+                    throw new Exception($testConn->connect_error);
+                }
+                // Create DB if not exists
+                $testConn->query("CREATE DATABASE IF NOT EXISTS `" . $testConn->real_escape_string($name) . "` 
+                    CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+                $testConn->close();
+
+                // Write config/database.php
+                $configContent = "<?php\n\nreturn [\n"
+                    . "    'host'     => " . var_export($host, true) . ",\n"
+                    . "    'username' => " . var_export($user, true) . ",\n"
+                    . "    'password' => " . var_export($pass, true) . ",\n"
+                    . "    'database' => " . var_export($name, true) . ",\n"
+                    . "    'charset'  => 'utf8mb4',\n"
+                    . "];\n";
+                file_put_contents(APP_ROOT . '/config/database.php', $configContent);
+
+                header('Location: install.php?step=3');
+                exit;
+            } catch (Exception $e) {
+                $error = 'فشل الاتصال بقاعدة البيانات: ' . htmlspecialchars($e->getMessage());
+            }
+        }
+    }
+
+    if ($step === '3') {
+        // Run migrations + seeds
+        try {
+            $dbCfg = require APP_ROOT . '/config/database.php';
+            $db = Database::connectWith($dbCfg['host'], $dbCfg['username'], $dbCfg['password'], $dbCfg['database']);
+
+            // Create migrations tracking table
+            $db->raw("CREATE TABLE IF NOT EXISTS `migrations` (
+                `id` INT AUTO_INCREMENT PRIMARY KEY,
+                `migration` VARCHAR(255) NOT NULL,
+                `ran_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+            // Run migrations
+            $migrationDir = APP_ROOT . '/database/migrations';
+            $files = glob($migrationDir . '/*.php');
+            sort($files);
+            $migrated = 0;
+
+            foreach ($files as $file) {
+                $filename = basename($file);
+                $exists = $db->fetch("SELECT id FROM migrations WHERE migration = ?", [$filename]);
+                if (!$exists) {
+                    $migration = require $file;
+                    if (is_callable($migration)) {
+                        $migration($db);
+                    }
+                    $db->insert('migrations', ['migration' => $filename]);
+                    $migrated++;
+                }
+            }
+
+            // Run seeds
+            $seedDir = APP_ROOT . '/database/seeds';
+            $seedFiles = glob($seedDir . '/*.php');
+            sort($seedFiles);
+
+            foreach ($seedFiles as $file) {
+                $seed = require $file;
+                if (is_callable($seed)) {
+                    $seed($db);
+                }
+            }
+
+            // Mark installed
+            file_put_contents(APP_ROOT . '/storage/installed.lock', date('Y-m-d H:i:s'));
+
+            header('Location: install.php?step=4');
+            exit;
+        } catch (Exception $e) {
+            $error = 'خطأ أثناء تنفيذ التهيئة: ' . htmlspecialchars($e->getMessage());
+        }
+    }
+}
+
+// ─── Requirements Check Data ────────────────────────────────────────────────────
+$requirements = [
+    ['name' => 'PHP >= 7.4',            'ok' => version_compare(PHP_VERSION, '7.4.0', '>=')],
+    ['name' => 'MySQLi Extension',       'ok' => extension_loaded('mysqli')],
+    ['name' => 'Session Extension',      'ok' => extension_loaded('session')],
+    ['name' => 'JSON Extension',         'ok' => extension_loaded('json')],
+    ['name' => 'MBString Extension',     'ok' => extension_loaded('mbstring')],
+    ['name' => 'config/ قابل للكتابة',   'ok' => is_writable(APP_ROOT . '/config')],
+    ['name' => 'storage/ موجود وقابل للكتابة', 'ok' => is_dir(APP_ROOT . '/storage') && is_writable(APP_ROOT . '/storage')],
+];
+$allPassed = !in_array(false, array_column($requirements, 'ok'), true);
+
+// Check if already installed
+$isInstalled = file_exists(APP_ROOT . '/storage/installed.lock');
+?>
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تثبيت النظام - نظام إدارة الجداول الدراسية</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.rtl.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Tajawal', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
+        .install-card { max-width: 700px; margin: 40px auto; border-radius: 15px; box-shadow: 0 20px 60px rgba(0,0,0,.3); }
+        .install-header { background: linear-gradient(135deg, #1e3c72, #2a5298); color: #fff; border-radius: 15px 15px 0 0; padding: 30px; text-align: center; }
+        .install-header h2 { margin: 0; font-weight: 700; }
+        .install-header p { margin: 10px 0 0; opacity: .85; }
+        .step-indicator { display: flex; justify-content: center; gap: 8px; margin-top: 15px; }
+        .step-dot { width: 12px; height: 12px; border-radius: 50%; background: rgba(255,255,255,.3); transition: .3s; }
+        .step-dot.active { background: #fff; transform: scale(1.3); }
+        .step-dot.done { background: #28a745; }
+        .install-body { padding: 30px; background: #fff; border-radius: 0 0 15px 15px; }
+        .req-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee; }
+        .req-item:last-child { border: none; }
+        .badge-ok { background: #28a745; color: #fff; padding: 4px 12px; border-radius: 20px; font-size: .85rem; }
+        .badge-fail { background: #dc3545; color: #fff; padding: 4px 12px; border-radius: 20px; font-size: .85rem; }
+    </style>
+</head>
+<body>
+<div class="container">
+<div class="install-card">
+    <div class="install-header">
+        <h2><i class="fas fa-calendar-alt ml-2"></i>نظام إدارة الجداول الدراسية</h2>
+        <p>معالج التثبيت — الإصدار 2.0</p>
+        <div class="step-indicator">
+            <div class="step-dot <?= $step >= 1 ? ($step > 1 ? 'done' : 'active') : '' ?>"></div>
+            <div class="step-dot <?= $step >= 2 ? ($step > 2 ? 'done' : 'active') : '' ?>"></div>
+            <div class="step-dot <?= $step >= 3 ? ($step > 3 ? 'done' : 'active') : '' ?>"></div>
+            <div class="step-dot <?= $step >= 4 ? 'active' : '' ?>"></div>
+        </div>
+    </div>
+
+    <div class="install-body">
+        <?php if ($error): ?>
+            <div class="alert alert-danger"><i class="fas fa-exclamation-circle ml-1"></i><?= $error ?></div>
+        <?php endif; ?>
+
+        <?php if ($isInstalled && $step !== '4'): ?>
+            <div class="alert alert-warning">
+                <i class="fas fa-info-circle ml-1"></i>
+                النظام مثبت بالفعل. إذا كنت تريد إعادة التثبيت، احذف الملف <code>storage/installed.lock</code> أولاً.
+            </div>
+            <a href="index.php" class="btn btn-primary btn-block">
+                <i class="fas fa-home ml-1"></i> الذهاب للنظام
+            </a>
+
+        <?php elseif ($step === '1'): ?>
+            <!-- Step 1: Requirements -->
+            <h4 class="mb-4"><i class="fas fa-clipboard-check ml-2 text-primary"></i>فحص المتطلبات</h4>
+            <?php foreach ($requirements as $req): ?>
+                <div class="req-item">
+                    <span><?= $req['name'] ?></span>
+                    <?php if ($req['ok']): ?>
+                        <span class="badge-ok"><i class="fas fa-check ml-1"></i>متوفر</span>
+                    <?php else: ?>
+                        <span class="badge-fail"><i class="fas fa-times ml-1"></i>غير متوفر</span>
+                    <?php endif; ?>
+                </div>
+            <?php endforeach; ?>
+            <form method="POST" class="mt-4">
+                <button type="submit" class="btn btn-primary btn-lg btn-block" <?= $allPassed ? '' : 'disabled' ?>>
+                    <?php if ($allPassed): ?>
+                        <i class="fas fa-arrow-left ml-1"></i> التالي — إعداد قاعدة البيانات
+                    <?php else: ?>
+                        <i class="fas fa-exclamation-triangle ml-1"></i> يرجى توفير جميع المتطلبات أولاً
+                    <?php endif; ?>
+                </button>
+            </form>
+
+        <?php elseif ($step === '2'): ?>
+            <!-- Step 2: Database Config -->
+            <h4 class="mb-4"><i class="fas fa-database ml-2 text-primary"></i>إعداد قاعدة البيانات</h4>
+            <form method="POST">
+                <div class="form-group">
+                    <label>خادم قاعدة البيانات <span class="text-danger">*</span></label>
+                    <input type="text" name="host" class="form-control" value="<?= htmlspecialchars($dbCfg['host'] ?? 'localhost') ?>" required>
+                </div>
+                <div class="form-group">
+                    <label>اسم المستخدم <span class="text-danger">*</span></label>
+                    <input type="text" name="username" class="form-control" value="<?= htmlspecialchars($dbCfg['username'] ?? 'root') ?>" required>
+                </div>
+                <div class="form-group">
+                    <label>كلمة المرور</label>
+                    <input type="password" name="password" class="form-control" value="">
+                </div>
+                <div class="form-group">
+                    <label>اسم قاعدة البيانات <span class="text-danger">*</span></label>
+                    <input type="text" name="database" class="form-control" value="<?= htmlspecialchars($dbCfg['database'] ?? 'timetable_v2') ?>" required>
+                    <small class="form-text text-muted">سيتم إنشاء قاعدة البيانات تلقائيًا إذا لم تكن موجودة.</small>
+                </div>
+                <div class="d-flex justify-content-between mt-4">
+                    <a href="install.php?step=1" class="btn btn-secondary">
+                        <i class="fas fa-arrow-right mr-1"></i> السابق
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-arrow-left ml-1"></i> التالي — تهيئة النظام
+                    </button>
+                </div>
+            </form>
+
+        <?php elseif ($step === '3'): ?>
+            <!-- Step 3: Run Setup -->
+            <h4 class="mb-4"><i class="fas fa-cogs ml-2 text-primary"></i>تهيئة النظام</h4>
+            <p>سيتم الآن:</p>
+            <ul class="pr-4">
+                <li>إنشاء جداول قاعدة البيانات (20 جدول)</li>
+                <li>إضافة البيانات الأساسية (الأدوار، الصلاحيات، الدرجات العلمية)</li>
+                <li>إنشاء حساب المدير الافتراضي</li>
+            </ul>
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle ml-1"></i>
+                <strong>بيانات المدير الافتراضي:</strong><br>
+                اسم المستخدم: <code>admin</code><br>
+                كلمة المرور: <code>admin123</code><br>
+                <small class="text-muted">(يرجى تغييرها بعد تسجيل الدخول)</small>
+            </div>
+            <form method="POST">
+                <div class="d-flex justify-content-between mt-4">
+                    <a href="install.php?step=2" class="btn btn-secondary">
+                        <i class="fas fa-arrow-right mr-1"></i> السابق
+                    </a>
+                    <button type="submit" class="btn btn-success btn-lg" onclick="this.disabled=true;this.innerHTML='<i class=\'fas fa-spinner fa-spin ml-1\'></i> جارٍ التثبيت...';this.form.submit();">
+                        <i class="fas fa-play ml-1"></i> بدء التثبيت
+                    </button>
+                </div>
+            </form>
+
+        <?php elseif ($step === '4'): ?>
+            <!-- Step 4: Done -->
+            <div class="text-center">
+                <div style="font-size: 4rem; color: #28a745; margin-bottom: 20px;">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <h3 class="mb-3">تم التثبيت بنجاح!</h3>
+                <p class="text-muted mb-4">النظام جاهز للاستخدام. يمكنك الآن تسجيل الدخول باستخدام بيانات المدير.</p>
+                <div class="card card-body bg-light mb-4">
+                    <strong>بيانات الدخول:</strong><br>
+                    اسم المستخدم: <code>admin</code><br>
+                    كلمة المرور: <code>admin123</code>
+                </div>
+                <a href="index.php" class="btn btn-primary btn-lg btn-block">
+                    <i class="fas fa-sign-in-alt ml-1"></i> الانتقال لتسجيل الدخول
+                </a>
+            </div>
+        <?php endif; ?>
+    </div>
+</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
