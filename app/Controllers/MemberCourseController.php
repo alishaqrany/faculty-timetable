@@ -61,6 +61,14 @@ class MemberCourseController extends \Controller
             $this->redirect('/member-courses/create', 'نوع التكليف لا يتوافق مع نوع المقرر المختار', 'error');
         }
 
+        if ($data['assignment_type'] === 'نظري') {
+            $existingTheory = $this->findTheoryAssignmentForSubject((int)$data['subject_id']);
+            if ($existingTheory) {
+                $memberName = trim((string)($existingTheory['member_name'] ?? 'عضو هيئة تدريس'));
+                $this->redirect('/member-courses/create', "هذا المقرر مسند نظريًا بالفعل إلى {$memberName}. النظري يجب أن يكون لشخص واحد فقط.", 'error');
+            }
+        }
+
         // Assignment logic based on type and scope
         $divisionIds = [];
         if ($data['assignment_type'] === 'نظري') {
@@ -181,6 +189,14 @@ class MemberCourseController extends \Controller
             $this->redirect("/member-courses/{$id}/edit", 'نوع التكليف لا يتوافق مع نوع المقرر المختار', 'error');
         }
 
+        if ($data['assignment_type'] === 'نظري') {
+            $existingTheory = $this->findTheoryAssignmentForSubject((int)$data['subject_id'], (int)$id);
+            if ($existingTheory) {
+                $memberName = trim((string)($existingTheory['member_name'] ?? 'عضو هيئة تدريس'));
+                $this->redirect("/member-courses/{$id}/edit", "هذا المقرر مسند نظريًا بالفعل إلى {$memberName}. النظري يجب أن يكون لشخص واحد فقط.", 'error');
+            }
+        }
+
         // Assignment logic based on type and scope
         $divisionIds = [];
         if ($data['assignment_type'] === 'نظري') {
@@ -287,6 +303,28 @@ class MemberCourseController extends \Controller
 
         return $sectionDepartmentId === (int)$subject['department_id']
             && $sectionLevelId === (int)$subject['level_id'];
+    }
+
+    private function findTheoryAssignmentForSubject(int $subjectId, ?int $exceptMemberCourseId = null): ?array
+    {
+        if ($subjectId <= 0) {
+            return null;
+        }
+
+        $sql = "SELECT mc.member_course_id, mc.member_id, fm.member_name
+                FROM member_courses mc
+                JOIN faculty_members fm ON fm.member_id = mc.member_id
+                WHERE mc.subject_id = ? AND mc.assignment_type = 'نظري'";
+        $params = [$subjectId];
+
+        if ($exceptMemberCourseId !== null) {
+            $sql .= " AND mc.member_course_id <> ?";
+            $params[] = $exceptMemberCourseId;
+        }
+
+        $sql .= " LIMIT 1";
+
+        return \Database::getInstance()->fetch($sql, $params);
     }
 
     public function destroy(string $id): void

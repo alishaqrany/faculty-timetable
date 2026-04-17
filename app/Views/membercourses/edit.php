@@ -77,7 +77,7 @@ $selectedPracticalDivisionId = (int)old('practical_division_id', (int)($course['
                             </option>
                         <?php endforeach; ?>
                     </select>
-                    <small class="text-muted">للمحاضرات النظرية - يمكنك اختيار أكثر من شعبة (محاضرة مشتركة للدفعة)</small>
+                    <small class="text-muted">للمحاضرات النظرية - يمكن اختيار أكثر من شعبة لنفس المدرس، لكن المقرر النظري يكون مسؤولًا عنه شخص واحد فقط.</small>
                 </div>
                 
                 <!-- Practical Scope Selection -->
