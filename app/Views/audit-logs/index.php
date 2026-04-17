@@ -28,7 +28,7 @@ $__breadcrumb = [['label' => 'سجل المراجعة']];
     <div class="card-body table-responsive p-0">
         <table class="table table-hover table-striped">
             <thead>
-                <tr><th>#</th><th>التاريخ</th><th>المستخدم</th><th>الإجراء</th><th>الموديول</th><th>المعرّف</th><th>تفاصيل</th></tr>
+                <tr><th>#</th><th>التاريخ</th><th>المستخدم</th><th>الإجراء</th><th>الموديول</th><th>المعرّف</th><th>الوصف</th><th>تفاصيل</th></tr>
             </thead>
             <tbody>
                 <?php foreach ($logs as $i => $log): ?>
@@ -36,9 +36,18 @@ $__breadcrumb = [['label' => 'سجل المراجعة']];
                     <td><?= $log['id'] ?></td>
                     <td><small><?= e($log['created_at'] ?? '') ?></small></td>
                     <td><?= e($log['username'] ?? $log['member_name'] ?? 'نظام') ?></td>
-                    <td><span class="badge badge-info"><?= e($log['action']) ?></span></td>
-                    <td><?= e($log['module']) ?></td>
+                    <td>
+                        <span class="badge badge-<?= e(audit_action_badge_class((string)($log['action'] ?? ''))) ?>">
+                            <?= e(audit_action_label((string)($log['action'] ?? ''))) ?>
+                        </span>
+                    </td>
+                    <td><?= e(audit_module_label((string)($log['module'] ?? ''))) ?></td>
                     <td><?= e($log['record_id'] ?? '—') ?></td>
+                    <td>
+                        <span class="badge badge-light" style="font-size:.82rem; font-weight:500;">
+                            <?= e(audit_log_summary($log)) ?>
+                        </span>
+                    </td>
                     <td>
                         <a href="<?= url("/audit-logs/{$log['id']}") ?>" class="btn btn-outline-primary btn-xs"><i class="fas fa-eye"></i></a>
                     </td>
@@ -50,7 +59,7 @@ $__breadcrumb = [['label' => 'سجل المراجعة']];
 
     <?php if (!empty($pagination) && $pagination['last_page'] > 1): ?>
     <div class="card-footer">
-        <?= pagination_html($pagination['current_page'], $pagination['last_page'], '/audit-logs?' . http_build_query(array_filter($filters))) ?>
+        <?= pagination_html($pagination, '/audit-logs', array_filter($filters)) ?>
     </div>
     <?php endif; ?>
 </div>

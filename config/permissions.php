@@ -95,6 +95,15 @@ return [
     'notifications.view'     => 'عرض الإشعارات',
     'notifications.send'      => 'إرسال الإشعارات',
 
+    // Backup & Cloud Sync
+    'backup.view'            => 'عرض النسخ الاحتياطية',
+    'backup.create'          => 'إنشاء نسخة احتياطية',
+    'backup.delete'          => 'حذف نسخة احتياطية',
+    'backup.restore'         => 'استعادة نسخة احتياطية',
+    'backup.cloud'           => 'رفع/تنزيل من السحابة',
+    'backup.sync'            => 'مزامنة مع السحابة',
+    'backup.settings'        => 'إعدادات السحابة',
+
     // API
     'api.access'             => 'الوصول إلى واجهة API',
 ];

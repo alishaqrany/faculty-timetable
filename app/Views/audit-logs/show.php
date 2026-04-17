@@ -10,12 +10,19 @@ $__breadcrumb = [['label' => 'سجل المراجعة', 'url' => '/audit-logs'],
         <div class="card-body">
             <table class="table">
                 <tr><th style="width:30%">التاريخ</th><td><?= e($log['created_at'] ?? '') ?></td></tr>
-                <tr><th>المستخدم</th><td><?= e($log['user_id']) ?></td></tr>
-                <tr><th>الإجراء</th><td><span class="badge badge-info"><?= e($log['action']) ?></span></td></tr>
-                <tr><th>الموديول</th><td><?= e($log['module']) ?></td></tr>
+                <tr><th>المستخدم</th><td><?= e($log['username'] ?? $log['member_name'] ?? (string)($log['user_id'] ?? 'نظام')) ?></td></tr>
+                <tr><th>الإجراء</th><td><span class="badge badge-<?= e(audit_action_badge_class((string)($log['action'] ?? ''))) ?>"><?= e(audit_action_label((string)($log['action'] ?? ''))) ?></span></td></tr>
+                <tr><th>الموديول</th><td><?= e(audit_module_label((string)($log['module'] ?? ''))) ?></td></tr>
                 <tr><th>معرف السجل</th><td><?= e($log['record_id'] ?? '—') ?></td></tr>
                 <tr><th>عنوان IP</th><td><?= e($log['ip_address'] ?? '') ?></td></tr>
             </table>
+
+            <div class="alert alert-info mt-3 mb-0">
+                <strong>الوصف المختصر:</strong>
+                <span class="badge badge-light" style="font-size:.92rem; font-weight:500;">
+                    <?= e(audit_log_summary($log)) ?>
+                </span>
+            </div>
 
             <?php if (!empty($log['old_values'])): ?>
             <h5 class="mt-3">القيم السابقة:</h5>

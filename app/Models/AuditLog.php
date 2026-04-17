@@ -39,4 +39,16 @@ class AuditLog extends \Model
 
         return static::query($sql, $params);
     }
+
+    public static function findWithUser(int $id): ?array
+    {
+        return static::queryOne(
+            "SELECT al.*, u.username, fm.member_name
+             FROM audit_logs al
+             LEFT JOIN users u ON al.user_id = u.id
+             LEFT JOIN faculty_members fm ON u.member_id = fm.member_id
+             WHERE al.id = ?",
+            [$id]
+        );
+    }
 }

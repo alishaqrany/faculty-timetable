@@ -196,18 +196,182 @@ function str_limit(string $text, int $limit = 50): string
 }
 
 /**
+ * Translate audit action to a human-readable Arabic label.
+ */
+function audit_action_label(string $action): string
+{
+    static $labels = [
+        'CREATE' => 'إنشاء',
+        'UPDATE' => 'تحديث',
+        'DELETE' => 'حذف',
+        'LOGIN'  => 'تسجيل دخول',
+        'LOGOUT' => 'تسجيل خروج',
+        'PASS_ROLE' => 'تمرير دور',
+        'IMPORT' => 'استيراد',
+        'EXPORT' => 'تصدير',
+    ];
+
+    return $labels[strtoupper($action)] ?? $action;
+}
+
+/**
+ * Bootstrap badge class for audit actions.
+ */
+function audit_action_badge_class(string $action): string
+{
+    return match (strtoupper($action)) {
+        'CREATE' => 'success',
+        'UPDATE' => 'warning',
+        'DELETE' => 'danger',
+        'LOGIN', 'LOGOUT' => 'primary',
+        'IMPORT', 'EXPORT', 'PASS_ROLE' => 'info',
+        default => 'secondary',
+    };
+}
+
+/**
+ * Translate audit module to a human-readable Arabic label.
+ */
+function audit_module_label(string $module): string
+{
+    static $labels = [
+        'auth' => 'المصادقة',
+        'departments' => 'الأقسام',
+        'levels' => 'الفرق',
+        'members' => 'أعضاء هيئة التدريس',
+        'subjects' => 'المقررات',
+        'divisions' => 'الشُعب',
+        'sections' => 'السكاشن',
+        'classrooms' => 'القاعات',
+        'sessions' => 'الفترات الزمنية',
+        'academic_years' => 'السنوات الأكاديمية',
+        'semesters' => 'الفصول الدراسية',
+        'member_courses' => 'تكليفات التدريس',
+        'scheduling' => 'الجدولة',
+        'timetable' => 'الجدول الدراسي',
+        'users' => 'المستخدمون',
+        'notifications' => 'الإشعارات',
+        'data_transfer' => 'نقل البيانات',
+    ];
+
+    return $labels[$module] ?? $module;
+}
+
+/**
+ * Decode audit JSON payload safely.
+ */
+function audit_decode_values($raw): array
+{
+    if (is_array($raw)) {
+        return $raw;
+    }
+    if (!is_string($raw) || trim($raw) === '') {
+        return [];
+    }
+    $decoded = json_decode($raw, true);
+    return is_array($decoded) ? $decoded : [];
+}
+
+/**
+ * Try to extract a human-friendly entity name from audit payload.
+ */
+function audit_entity_name(array $log): ?string
+{
+    $newValues = audit_decode_values($log['new_values'] ?? null);
+    $oldValues = audit_decode_values($log['old_values'] ?? null);
+    $data = !empty($newValues) ? $newValues : $oldValues;
+
+    if (empty($data)) {
+        return null;
+    }
+
+    $preferredKeys = [
+        'department_name',
+        'level_name',
+        'member_name',
+        'subject_name',
+        'division_name',
+        'section_name',
+        'classroom_name',
+        'session_name',
+        'academic_year_name',
+        'semester_name',
+        'username',
+        'role_name',
+        'setting_key',
+        'title',
+        'name',
+    ];
+
+    foreach ($preferredKeys as $key) {
+        if (isset($data[$key]) && is_scalar($data[$key])) {
+            $value = trim((string)$data[$key]);
+            if ($value !== '') {
+                return $value;
+            }
+        }
+    }
+
+    foreach ($data as $key => $value) {
+        if (!is_scalar($value)) {
+            continue;
+        }
+        if (str_ends_with((string)$key, '_name')) {
+            $text = trim((string)$value);
+            if ($text !== '') {
+                return $text;
+            }
+        }
+    }
+
+    return null;
+}
+
+/**
+ * Human readable audit summary.
+ */
+function audit_log_summary(array $log): string
+{
+    $action = strtoupper((string)($log['action'] ?? ''));
+    $module = (string)($log['module'] ?? '');
+    $moduleLabel = audit_module_label($module);
+    $recordId = !empty($log['record_id']) ? ' #' . $log['record_id'] : '';
+    $entityName = audit_entity_name($log);
+    $entityPart = $entityName ? ': ' . $entityName : '';
+
+    return match ($action) {
+        'CREATE' => 'تم إنشاء ' . $moduleLabel . $recordId . $entityPart,
+        'UPDATE' => 'تم تحديث ' . $moduleLabel . $recordId . $entityPart,
+        'DELETE' => 'تم حذف ' . $moduleLabel . $recordId . $entityPart,
+        'LOGIN'  => 'تم تسجيل دخول المستخدم',
+        'LOGOUT' => 'تم تسجيل خروج المستخدم',
+        'PASS_ROLE' => 'تم تمرير دور الجدولة',
+        'IMPORT' => 'تم استيراد بيانات ' . $moduleLabel . $entityPart,
+        'EXPORT' => 'تم تصدير بيانات ' . $moduleLabel . $entityPart,
+        default => trim(audit_action_label($action) . ' ' . $moduleLabel . $recordId . $entityPart),
+    };
+}
+
+/**
  * Generate pagination HTML.
  */
-function pagination_html(array $pagination, string $baseUrl): string
+function pagination_html(array $pagination, string $baseUrl, array $query = []): string
 {
     if ($pagination['last_page'] <= 1) return '';
+
+    $separator = str_contains($baseUrl, '?') ? '&' : '?';
+    $queryString = $query ? http_build_query($query) : '';
+    if ($queryString !== '') {
+        $baseUrl .= ($separator . $queryString);
+        $separator = '&';
+    }
 
     $html = '<nav dir="ltr"><ul class="pagination pagination-sm justify-content-center m-0">';
 
     // Previous
     if ($pagination['current_page'] > 1) {
         $prev = $pagination['current_page'] - 1;
-        $html .= '<li class="page-item"><a class="page-link" href="' . e($baseUrl) . '?page=' . $prev . '">&laquo;</a></li>';
+        $html .= '<li class="page-item"><a class="page-link" href="' . e($baseUrl) . $separator . 'page=' . $prev . '">&laquo;</a></li>';
     }
 
     // Pages
@@ -216,13 +380,13 @@ function pagination_html(array $pagination, string $baseUrl): string
 
     for ($i = $start; $i <= $end; $i++) {
         $active = $i === $pagination['current_page'] ? ' active' : '';
-        $html .= '<li class="page-item' . $active . '"><a class="page-link" href="' . e($baseUrl) . '?page=' . $i . '">' . $i . '</a></li>';
+        $html .= '<li class="page-item' . $active . '"><a class="page-link" href="' . e($baseUrl) . $separator . 'page=' . $i . '">' . $i . '</a></li>';
     }
 
     // Next
     if ($pagination['current_page'] < $pagination['last_page']) {
         $next = $pagination['current_page'] + 1;
-        $html .= '<li class="page-item"><a class="page-link" href="' . e($baseUrl) . '?page=' . $next . '">&raquo;</a></li>';
+        $html .= '<li class="page-item"><a class="page-link" href="' . e($baseUrl) . $separator . 'page=' . $next . '">&raquo;</a></li>';
     }
 
     $html .= '</ul></nav>';

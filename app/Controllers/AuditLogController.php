@@ -40,7 +40,7 @@ class AuditLogController extends \Controller
     {
         $this->authorize('audit.view');
 
-        $log = AuditLog::find((int)$id);
+        $log = AuditLog::findWithUser((int)$id);
         if (!$log) $this->redirect('/audit-logs', 'السجل غير موجود', 'error');
 
         $this->render('audit-logs.show', ['log' => $log]);

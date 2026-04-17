@@ -35,7 +35,7 @@ if (!function_exists('activeAny')) {
 
 $dataPaths = ['/departments', '/levels', '/classrooms', '/sessions', '/academic-years', '/semesters'];
 $academicPaths = ['/members', '/subjects', '/divisions', '/sections', '/member-courses'];
-$adminPaths = ['/users', '/audit-logs', '/settings', '/notifications'];
+$adminPaths = ['/users', '/audit-logs', '/settings', '/notifications', '/backups'];
 ?>
 <!-- Main Sidebar -->
 <aside class="main-sidebar sidebar-dark-primary elevation-4">
@@ -217,6 +217,13 @@ $adminPaths = ['/users', '/audit-logs', '/settings', '/notifications'];
                         <li class="nav-item">
                             <a href="<?= url('/settings') ?>" class="nav-link <?= isActive('/settings', $current) ?>">
                                 <i class="far fa-circle nav-icon"></i> <p>الإعدادات</p>
+                            </a>
+                        </li>
+                        <?php endif; ?>
+                        <?php if (can('backup.view')): ?>
+                        <li class="nav-item">
+                            <a href="<?= url('/backups') ?>" class="nav-link <?= isActive('/backups', $current) ?>">
+                                <i class="far fa-circle nav-icon"></i> <p>النسخ الاحتياطي</p>
                             </a>
                         </li>
                         <?php endif; ?>

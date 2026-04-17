@@ -76,6 +76,25 @@ $router->group('', ['AuthMiddleware', 'CsrfMiddleware'], function (Router $route
     $router->get('/settings/data-transfer/sample-sql', 'DataTransferController@downloadSampleSql');
     $router->post('/settings/data-transfer/import-sql', 'DataTransferController@importSql');
     $router->post('/settings/data-transfer/import-excel', 'DataTransferController@importExcel');
+
+    // Backups & Cloud Sync
+    $router->get('/backups', 'BackupController@index');
+    $router->post('/backups/create-sql', 'BackupController@createSqlBackup');
+    $router->post('/backups/create-excel', 'BackupController@createExcelBackup');
+    $router->get('/backups/download/{filename}', 'BackupController@download');
+    $router->post('/backups/delete/{filename}', 'BackupController@delete');
+    $router->post('/backups/restore/{filename}', 'BackupController@restore');
+    $router->post('/backups/upload-cloud/{filename}', 'BackupController@uploadToCloud');
+    $router->get('/backups/cloud-settings', 'BackupController@cloudSettings');
+    $router->post('/backups/cloud-settings', 'BackupController@saveCloudSettings');
+    $router->get('/backups/google-drive/auth', 'BackupController@googleDriveAuth');
+    $router->get('/backups/google-drive/callback', 'BackupController@googleDriveCallback');
+    $router->get('/backups/google-drive/files', 'BackupController@googleDriveFiles');
+    $router->get('/backups/supabase/files', 'BackupController@supabaseFiles');
+    $router->get('/backups/firebase/files', 'BackupController@firebaseFiles');
+    $router->post('/backups/sync-supabase', 'BackupController@syncSupabase');
+    $router->post('/backups/sync-firebase', 'BackupController@syncFirebase');
+    $router->post('/backups/download-from-cloud', 'BackupController@downloadFromCloud');
 });
 
 // ── API routes ─────────────────────────────────────────────────────
