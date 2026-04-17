@@ -17,8 +17,10 @@ class Timetable extends \Model
                        fm.member_name, s.subject_name,
                        (
                          CASE 
-                           WHEN mc.assignment_type = 'عملي' THEN 
+                           WHEN mc.assignment_type = 'عملي' AND mc.section_id IS NOT NULL THEN 
                              (SELECT sec.section_name FROM sections sec WHERE sec.section_id = mc.section_id LIMIT 1)
+                           WHEN mc.assignment_type = 'عملي' AND mc.division_id IS NOT NULL THEN
+                             CONCAT('عملي - ', (SELECT divi.division_name FROM divisions divi WHERE divi.division_id = mc.division_id LIMIT 1))
                            WHEN mc.assignment_type = 'نظري' AND mc.is_shared = 0 THEN
                              (SELECT divi.division_name FROM divisions divi WHERE divi.division_id = mc.division_id LIMIT 1)
                            WHEN mc.assignment_type = 'نظري' AND mc.is_shared = 1 THEN

@@ -45,9 +45,12 @@ $__breadcrumb = [['label' => 'تكليفات التدريس']];
                         <?php if ($assignType === 'نظري' && !empty($c['division_name'])): ?>
                             <i class="fas fa-users text-info mr-1"></i>
                             <?= e($c['division_name']) ?>
-                        <?php elseif (!empty($c['section_name'])): ?>
+                        <?php elseif ($assignType === 'عملي' && !empty($c['section_name'])): ?>
                             <i class="fas fa-layer-group text-warning mr-1"></i>
                             <?= e($c['section_name']) ?>
+                        <?php elseif ($assignType === 'عملي' && !empty($c['division_name'])): ?>
+                            <i class="fas fa-users text-warning mr-1"></i>
+                            <?= e($c['division_name']) ?> <small class="text-muted">(الشعبة كاملة)</small>
                         <?php else: ?>
                             <span class="text-muted">—</span>
                         <?php endif; ?>

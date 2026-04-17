@@ -59,16 +59,12 @@ class SchedulingService
             } elseif ($mc['division_id']) {
                 $myDivisions[] = $mc['division_id'];
             }
-        } elseif ($mc['assignment_type'] === 'عملي' && $mc['section_id']) {
-            $secId = $mc['section_id'];
-            $mySections[] = $secId;
-            $secDb = $db->fetch("SELECT parent_section_id FROM sections WHERE section_id = ?", [$secId]);
-            if ($secDb && $secDb['parent_section_id']) {
-                $mySections[] = $secDb['parent_section_id'];
-            }
-            $kids = $db->fetchAll("SELECT section_id FROM sections WHERE parent_section_id = ?", [$secId]);
-            foreach ($kids as $k) {
-                $mySections[] = $k['section_id'];
+        } elseif ($mc['assignment_type'] === 'عملي') {
+            if ($mc['section_id']) {
+                $mySections[] = $mc['section_id'];
+            } elseif ($mc['division_id']) {
+                // Practical at division level — treat like theory division overlap
+                $myDivisions[] = $mc['division_id'];
             }
         }
         
@@ -97,30 +93,29 @@ class SchedulingService
         foreach ($overlappingClasses as $ex) {
             $exDivs = [];
             $exSecs = [];
-            $exM = $db->fetch("SELECT is_shared, division_id, section_id FROM member_courses WHERE member_course_id = ?", [$ex['mc2_id']]);
+            $exM = $db->fetch("SELECT is_shared, division_id, section_id, assignment_type FROM member_courses WHERE member_course_id = ?", [$ex['mc2_id']]);
             
-            if ($ex['assignment_type'] === 'نظري') {
+            if ($exM['assignment_type'] === 'نظري') {
                 if ($exM['is_shared']) {
                     $sh = $db->fetchAll("SELECT division_id FROM member_course_shared_divisions WHERE member_course_id = ?", [$ex['mc2_id']]);
                     $exDivs = array_column($sh, 'division_id');
                 } elseif ($exM['division_id']) {
                     $exDivs[] = $exM['division_id'];
                 }
-                
-                if (!empty($exDivs)) {
-                    $ph = implode(',', array_fill(0, count($exDivs), '?'));
-                    $secRows = $db->fetchAll("SELECT section_id FROM sections WHERE division_id IN ($ph)", $exDivs);
-                    $exSecs = array_column($secRows, 'section_id');
-                }
-            } else {
+            } elseif ($exM['assignment_type'] === 'عملي') {
                 if ($exM['section_id']) {
-                    $exSecId = $exM['section_id'];
-                    $exSecs[] = $exSecId;
-                    $pp = $db->fetch("SELECT parent_section_id FROM sections WHERE section_id = ?", [$exSecId]);
-                    if ($pp && $pp['parent_section_id']) $exSecs[] = $pp['parent_section_id'];
-                    $cc = $db->fetchAll("SELECT section_id FROM sections WHERE parent_section_id = ?", [$exSecId]);
-                    foreach ($cc as $kid) $exSecs[] = $kid['section_id'];
+                    $exSecs[] = $exM['section_id'];
+                } elseif ($exM['division_id']) {
+                    // Practical at division level
+                    $exDivs[] = $exM['division_id'];
                 }
+            }
+
+            // Expand divisions to their sections for overlap check
+            if (!empty($exDivs)) {
+                $ph = implode(',', array_fill(0, count($exDivs), '?'));
+                $secRows = $db->fetchAll("SELECT section_id FROM sections WHERE division_id IN ($ph)", $exDivs);
+                $exSecs = array_merge($exSecs, array_column($secRows, 'section_id'));
             }
             
             $intersectDivs = array_intersect($myDivisions, $exDivs);

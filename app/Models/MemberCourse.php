@@ -103,14 +103,19 @@ class MemberCourse extends \Model
     {
         return static::query(
             "SELECT mc.*, fm.member_name, s.subject_name, sec.section_name,
-                    dv.division_name, d.department_name, l.level_name
+                    COALESCE(dv2.division_name, dv.division_name) as division_name,
+                    COALESCE(d2.department_name, d.department_name) as department_name,
+                    COALESCE(l2.level_name, l.level_name) as level_name
              FROM member_courses mc
              JOIN faculty_members fm ON mc.member_id = fm.member_id
              JOIN subjects s ON mc.subject_id = s.subject_id
-             JOIN sections sec ON mc.section_id = sec.section_id
-             JOIN divisions dv ON sec.division_id = dv.division_id
-             JOIN departments d ON dv.department_id = d.department_id
-             JOIN levels l ON dv.level_id = l.level_id
+             LEFT JOIN sections sec ON mc.section_id = sec.section_id
+             LEFT JOIN divisions dv ON sec.division_id = dv.division_id
+             LEFT JOIN divisions dv2 ON mc.division_id = dv2.division_id
+             LEFT JOIN departments d ON dv.department_id = d.department_id
+             LEFT JOIN departments d2 ON dv2.department_id = d2.department_id
+             LEFT JOIN levels l ON dv.level_id = l.level_id
+             LEFT JOIN levels l2 ON dv2.level_id = l2.level_id
              WHERE mc.assignment_type = 'عملي'
              ORDER BY fm.member_name, s.subject_name"
         );

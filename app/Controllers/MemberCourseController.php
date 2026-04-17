@@ -52,7 +52,17 @@ class MemberCourseController extends \Controller
             $this->redirect('/member-courses/create', 'يرجى اختيار عضو هيئة التدريس والمقرر', 'error');
         }
 
-        // Assignment: theory → division_id, practical → section_id
+        $subject = Subject::find((int)$data['subject_id']);
+        if (!$subject) {
+            $this->redirect('/member-courses/create', 'المقرر غير موجود', 'error');
+        }
+
+        if (!$this->isAssignmentTypeCompatible($subject, (string)$data['assignment_type'])) {
+            $this->redirect('/member-courses/create', 'نوع التكليف لا يتوافق مع نوع المقرر المختار', 'error');
+        }
+
+        // Assignment logic based on type and scope
+        $divisionIds = [];
         if ($data['assignment_type'] === 'نظري') {
             $divisionIds = $_POST['division_id'] ?? [];
             if (!is_array($divisionIds)) {
@@ -64,21 +74,44 @@ class MemberCourseController extends \Controller
                 $this->redirect('/member-courses/create', 'يرجى اختيار الشعبة للتدريس النظري', 'error');
             }
 
+            foreach ($divisionIds as $divisionId) {
+                if (!$this->isDivisionMatchingSubject((int)$divisionId, $subject)) {
+                    $this->redirect('/member-courses/create', 'الشعبة المختارة لا تتبع نفس القسم والفرقة الخاصة بالمقرر', 'error');
+                }
+            }
+
             $data['division_id'] = reset($divisionIds);
             $data['is_shared'] = count($divisionIds) > 1 ? 1 : 0;
             $data['section_id'] = null;
         } else {
-            $data['section_id'] = (int)$this->request->input('section_id');
-            $data['division_id'] = null;
-            $data['is_shared'] = 0;
-            if (!$data['section_id']) {
-                $this->redirect('/member-courses/create', 'يرجى اختيار السكشن للتدريس العملي', 'error');
+            // Practical: check scope (section-level or division-level)
+            $practicalScope = $this->request->input('practical_scope', 'section');
+            if ($practicalScope === 'division') {
+                $data['division_id'] = (int)$this->request->input('practical_division_id');
+                $data['section_id'] = null;
+                $data['is_shared'] = 0;
+                if (!$data['division_id']) {
+                    $this->redirect('/member-courses/create', 'يرجى اختيار الشعبة للتدريس العملي', 'error');
+                }
+                if (!$this->isDivisionMatchingSubject((int)$data['division_id'], $subject)) {
+                    $this->redirect('/member-courses/create', 'الشعبة المختارة لا تتبع نفس القسم والفرقة الخاصة بالمقرر', 'error');
+                }
+            } else {
+                $data['section_id'] = (int)$this->request->input('section_id');
+                $data['division_id'] = null;
+                $data['is_shared'] = 0;
+                if (!$data['section_id']) {
+                    $this->redirect('/member-courses/create', 'يرجى اختيار السكشن للتدريس العملي', 'error');
+                }
+                if (!$this->isSectionMatchingSubject((int)$data['section_id'], $subject)) {
+                    $this->redirect('/member-courses/create', 'السكشن المختار لا يتبع نفس القسم والفرقة الخاصة بالمقرر', 'error');
+                }
             }
         }
 
         $id = MemberCourse::create($data);
         
-        // Save division relations
+        // Save division relations for shared theory
         if ($data['assignment_type'] === 'نظري' && !empty($divisionIds)) {
             foreach ($divisionIds as $divId) {
                 \Database::getInstance()->execute(
@@ -139,7 +172,17 @@ class MemberCourseController extends \Controller
             $this->redirect("/member-courses/{$id}/edit", 'يرجى اختيار عضو هيئة التدريس والمقرر', 'error');
         }
 
-        // Assignment: theory → division_id, practical → section_id
+        $subject = Subject::find((int)$data['subject_id']);
+        if (!$subject) {
+            $this->redirect("/member-courses/{$id}/edit", 'المقرر غير موجود', 'error');
+        }
+
+        if (!$this->isAssignmentTypeCompatible($subject, (string)$data['assignment_type'])) {
+            $this->redirect("/member-courses/{$id}/edit", 'نوع التكليف لا يتوافق مع نوع المقرر المختار', 'error');
+        }
+
+        // Assignment logic based on type and scope
+        $divisionIds = [];
         if ($data['assignment_type'] === 'نظري') {
             $divisionIds = $_POST['division_id'] ?? [];
             if (!is_array($divisionIds)) {
@@ -151,15 +194,38 @@ class MemberCourseController extends \Controller
                 $this->redirect("/member-courses/{$id}/edit", 'يرجى اختيار الشعبة للتدريس النظري', 'error');
             }
 
+            foreach ($divisionIds as $divisionId) {
+                if (!$this->isDivisionMatchingSubject((int)$divisionId, $subject)) {
+                    $this->redirect("/member-courses/{$id}/edit", 'الشعبة المختارة لا تتبع نفس القسم والفرقة الخاصة بالمقرر', 'error');
+                }
+            }
+
             $data['division_id'] = reset($divisionIds);
             $data['is_shared'] = count($divisionIds) > 1 ? 1 : 0;
             $data['section_id'] = null;
         } else {
-            $data['section_id'] = (int)$this->request->input('section_id');
-            $data['division_id'] = null;
-            $data['is_shared'] = 0;
-            if (!$data['section_id']) {
-                $this->redirect("/member-courses/{$id}/edit", 'يرجى اختيار السكشن للتدريس العملي', 'error');
+            // Practical: check scope (section-level or division-level)
+            $practicalScope = $this->request->input('practical_scope', 'section');
+            if ($practicalScope === 'division') {
+                $data['division_id'] = (int)$this->request->input('practical_division_id');
+                $data['section_id'] = null;
+                $data['is_shared'] = 0;
+                if (!$data['division_id']) {
+                    $this->redirect("/member-courses/{$id}/edit", 'يرجى اختيار الشعبة للتدريس العملي', 'error');
+                }
+                if (!$this->isDivisionMatchingSubject((int)$data['division_id'], $subject)) {
+                    $this->redirect("/member-courses/{$id}/edit", 'الشعبة المختارة لا تتبع نفس القسم والفرقة الخاصة بالمقرر', 'error');
+                }
+            } else {
+                $data['section_id'] = (int)$this->request->input('section_id');
+                $data['division_id'] = null;
+                $data['is_shared'] = 0;
+                if (!$data['section_id']) {
+                    $this->redirect("/member-courses/{$id}/edit", 'يرجى اختيار السكشن للتدريس العملي', 'error');
+                }
+                if (!$this->isSectionMatchingSubject((int)$data['section_id'], $subject)) {
+                    $this->redirect("/member-courses/{$id}/edit", 'السكشن المختار لا يتبع نفس القسم والفرقة الخاصة بالمقرر', 'error');
+                }
             }
         }
 
@@ -167,7 +233,7 @@ class MemberCourseController extends \Controller
 
         // Update shared divisions
         \Database::getInstance()->execute("DELETE FROM member_course_shared_divisions WHERE member_course_id = ?", [$id]);
-        if ($data['assignment_type'] === 'نظري' && isset($divisionIds) && !empty($divisionIds)) {
+        if ($data['assignment_type'] === 'نظري' && !empty($divisionIds)) {
             foreach ($divisionIds as $divId) {
                 \Database::getInstance()->execute(
                     "INSERT INTO member_course_shared_divisions (member_course_id, division_id) VALUES (?, ?)",
@@ -179,6 +245,48 @@ class MemberCourseController extends \Controller
         AuditService::log('UPDATE', 'member_courses', (int)$id, $course, $data);
 
         $this->redirect('/member-courses', 'تم تحديث تكليف التدريس بنجاح ✓');
+    }
+
+    private function isAssignmentTypeCompatible(array $subject, string $assignmentType): bool
+    {
+        $subjectType = trim((string)($subject['subject_type'] ?? 'نظري'));
+        if ($subjectType === 'نظري وعملي') {
+            return in_array($assignmentType, ['نظري', 'عملي'], true);
+        }
+        return $subjectType === $assignmentType;
+    }
+
+    private function isDivisionMatchingSubject(int $divisionId, array $subject): bool
+    {
+        if ($divisionId <= 0) {
+            return false;
+        }
+
+        $division = Division::find($divisionId);
+        if (!$division) {
+            return false;
+        }
+
+        return (int)$division['department_id'] === (int)$subject['department_id']
+            && (int)$division['level_id'] === (int)$subject['level_id'];
+    }
+
+    private function isSectionMatchingSubject(int $sectionId, array $subject): bool
+    {
+        if ($sectionId <= 0) {
+            return false;
+        }
+
+        $section = Section::findWithDetails($sectionId);
+        if (!$section) {
+            return false;
+        }
+
+        $sectionDepartmentId = (int)($section['div_dept_id'] ?? $section['department_id'] ?? 0);
+        $sectionLevelId = (int)($section['div_level_id'] ?? $section['level_id'] ?? 0);
+
+        return $sectionDepartmentId === (int)$subject['department_id']
+            && $sectionLevelId === (int)$subject['level_id'];
     }
 
     public function destroy(string $id): void
