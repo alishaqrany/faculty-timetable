@@ -18,7 +18,7 @@ $__breadcrumb = [['label' => 'تكليفات التدريس']];
     <div class="card-body table-responsive p-0">
         <table class="table table-hover table-striped data-table">
             <thead>
-                <tr><th>#</th><th>عضو هيئة التدريس</th><th>المقرر</th><th>نوع التكليف</th><th>الشعبة/السكشن</th><th>القسم</th><th>المستوى</th><th>إجراءات</th></tr>
+                <tr><th>#</th><th>عضو هيئة التدريس</th><th>المقرر</th><th>نوع التكليف</th><th>الشعبة/السكشن</th><th>القسم</th><th>الفرقة</th><th>إجراءات</th></tr>
             </thead>
             <tbody>
                 <?php foreach ($courses as $i => $c): ?>

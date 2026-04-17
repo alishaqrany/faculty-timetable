@@ -12,22 +12,14 @@ $__breadcrumb = [['label' => 'السنوات الأكاديمية', 'url' => url
         <?= csrf_field() ?>
         <div class="card-body">
             <div class="form-group">
-                <label>اسم السنة الأكاديمية <span class="text-danger">*</span></label>
-                <input type="text" name="year_name" class="form-control" value="<?= e($year['year_name']) ?>" required>
-            </div>
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label>تاريخ البداية <span class="text-danger">*</span></label>
-                        <input type="date" name="start_date" class="form-control" value="<?= e($year['start_date']) ?>" required>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label>تاريخ النهاية <span class="text-danger">*</span></label>
-                        <input type="date" name="end_date" class="form-control" value="<?= e($year['end_date']) ?>" required>
-                    </div>
-                </div>
+                <label>السنة الأكاديمية (اختيار أو إنشاء) <span class="text-danger">*</span></label>
+                <input type="text" name="year_range" class="form-control" value="<?= e($year['year_range'] ?? '') ?>" list="year-range-options" placeholder="مثال: 2025-2026" pattern="\d{4}-\d{4}" required>
+                <datalist id="year-range-options">
+                    <?php foreach (($yearRangeOptions ?? []) as $opt): ?>
+                    <option value="<?= e($opt) ?>"></option>
+                    <?php endforeach; ?>
+                </datalist>
+                <small class="form-text text-muted">اختر من القائمة أو اكتب سنة جديدة بصيغة 2025-2026.</small>
             </div>
             <div class="form-check mb-3">
                 <input type="hidden" name="is_active" value="0">

@@ -19,7 +19,7 @@ $__breadcrumb = [['label' => 'المقررات']];
         <table class="table table-hover table-striped data-table">
             <thead>
                 <tr>
-                    <th>#</th><th>اسم المقرر</th><th>الرمز</th><th>القسم</th><th>المستوى</th>
+                    <th>#</th><th>اسم المقرر</th><th>الرمز</th><th>القسم</th><th>الفرقة</th>
                     <th>الساعات</th><th>النوع</th><th>إجراءات</th>
                 </tr>
             </thead>

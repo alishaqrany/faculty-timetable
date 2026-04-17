@@ -38,9 +38,9 @@ $__breadcrumb = [['label' => 'المقررات', 'url' => '/subjects'], ['label'
                     </div>
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label>المستوى <span class="text-danger">*</span></label>
+                            <label>الفرقة <span class="text-danger">*</span></label>
                             <select name="level_id" class="form-control select2" required>
-                                <option value="">-- اختر --</option>
+                                <option value="">-- اختر الفرقة --</option>
                                 <?php foreach ($levels as $l): ?>
                                     <option value="<?= $l['level_id'] ?>" <?= $subject['level_id'] == $l['level_id'] ? 'selected' : '' ?>><?= e($l['level_name']) ?></option>
                                 <?php endforeach; ?>

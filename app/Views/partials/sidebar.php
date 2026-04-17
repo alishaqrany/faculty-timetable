@@ -100,7 +100,7 @@ $adminPaths = ['/users', '/audit-logs', '/settings', '/notifications', '/backups
                         <?php if (can('levels.view')): ?>
                         <li class="nav-item">
                             <a href="<?= url('/levels') ?>" class="nav-link <?= isActive('/levels', $current) ?>">
-                                <i class="far fa-circle nav-icon"></i> <p>المستويات</p>
+                                <i class="far fa-circle nav-icon"></i> <p>الفرق</p>
                             </a>
                         </li>
                         <?php endif; ?>

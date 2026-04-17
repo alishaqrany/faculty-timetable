@@ -23,7 +23,7 @@ $__breadcrumb = [['label' => 'الجدول الدراسي']];
                 </div>
                 <div class="col-md-3">
                     <div class="form-group">
-                        <label>المستوى</label>
+                        <label>الفرقة</label>
                         <select name="level_id" class="form-control select2">
                             <option value="">-- الكل --</option>
                             <?php foreach ($levels as $l): ?>

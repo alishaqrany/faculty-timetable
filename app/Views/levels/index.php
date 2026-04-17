@@ -9,6 +9,12 @@ $__breadcrumb = [['label' => 'الفرق']];
         <h3 class="card-title">قائمة الفرق</h3>
         <?php if (can('levels.create')): ?>
         <div class="card-tools">
+            <form method="POST" action="<?= url('/levels/seed-defaults') ?>" class="d-inline" onsubmit="return confirm('سيتم إضافة الفرق الافتراضية غير الموجودة (الأولى إلى الرابعة). هل تريد المتابعة؟');">
+                <?= csrf_field() ?>
+                <button type="submit" class="btn btn-success btn-sm ml-1">
+                    <i class="fas fa-magic ml-1"></i> إضافة الفرق
+                </button>
+            </form>
             <a href="<?= url('/levels/create') ?>" class="btn btn-primary btn-sm">
                 <i class="fas fa-plus ml-1"></i> إضافة فرقة
             </a>

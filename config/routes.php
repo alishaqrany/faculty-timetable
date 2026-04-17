@@ -22,6 +22,7 @@ $router->group('', ['AuthMiddleware', 'CsrfMiddleware'], function (Router $route
 
     // CRUD Resources
     $router->resource('/departments', 'DepartmentController');
+    $router->post('/levels/seed-defaults', 'LevelController@seedDefaults');
     $router->resource('/levels', 'LevelController');
     $router->resource('/members', 'MemberController');
     $router->resource('/subjects', 'SubjectController');
@@ -30,8 +31,8 @@ $router->group('', ['AuthMiddleware', 'CsrfMiddleware'], function (Router $route
     $router->resource('/sections', 'SectionController');
     $router->get('/api/sections/by-division', 'SectionController@byDivision');
     $router->resource('/classrooms', 'ClassroomController');
-    $router->resource('/sessions', 'SessionController');
     $router->post('/sessions/generate', 'SessionController@generate');
+    $router->resource('/sessions', 'SessionController');
     $router->resource('/member-courses', 'MemberCourseController');
 
     // Scheduling
@@ -51,6 +52,7 @@ $router->group('', ['AuthMiddleware', 'CsrfMiddleware'], function (Router $route
     $router->post('/academic-years/{id}/set-current', 'AcademicYearController@setCurrent');
 
     // Semesters
+    $router->post('/semesters/generate-for-year', 'SemesterController@generateForYear');
     $router->resource('/semesters', 'SemesterController');
     $router->post('/semesters/{id}/set-current', 'SemesterController@setCurrent');
 
