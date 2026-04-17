@@ -56,25 +56,25 @@ $__breadcrumb = [['label' => 'الجدول الدراسي']];
                 </div>
             </div>
         </div>
-        <div class="card-footer">
-            <button type="submit" class="btn btn-primary"><i class="fas fa-search ml-1"></i> عرض</button>
-            <a href="<?= url('/timetable') ?>" class="btn btn-secondary">إعادة تعيين</a>
+        <div class="card-footer d-flex flex-wrap align-items-center justify-content-between">
+            <div class="mb-2 mb-sm-0">
+                <button type="submit" class="btn btn-primary"><i class="fas fa-search ml-1"></i> عرض</button>
+                <a href="<?= url('/timetable') ?>" class="btn btn-secondary">إعادة تعيين</a>
+            </div>
             <?php if ($hasFilter && can('timetable.export')): ?>
-            <div class="float-left">
-                <div class="btn-group" role="group">
-                    <a href="<?= url('/timetable/export?' . http_build_query(array_merge($filters, ['format' => 'pdf']))) ?>" class="btn btn-danger btn-sm" target="_blank">
-                        <i class="fas fa-file-pdf ml-1"></i> PDF
-                    </a>
-                    <a href="<?= url('/timetable/export?' . http_build_query(array_merge($filters, ['format' => 'excel']))) ?>" class="btn btn-success btn-sm">
-                        <i class="fas fa-file-excel ml-1"></i> Excel
-                    </a>
-                    <a href="<?= url('/timetable/export?' . http_build_query(array_merge($filters, ['format' => 'csv']))) ?>" class="btn btn-secondary btn-sm">
-                        <i class="fas fa-file-csv ml-1"></i> CSV
-                    </a>
-                    <a href="<?= url('/timetable/export?' . http_build_query(array_merge($filters, ['format' => 'html']))) ?>" class="btn btn-info btn-sm" target="_blank">
-                        <i class="fas fa-print ml-1"></i> طباعة
-                    </a>
-                </div>
+            <div class="btn-group" role="group">
+                <a href="<?= url('/timetable/export?' . http_build_query(array_merge($filters, ['format' => 'pdf']))) ?>" class="btn btn-danger btn-sm" target="_blank">
+                    <i class="fas fa-file-pdf ml-1"></i> PDF
+                </a>
+                <a href="<?= url('/timetable/export?' . http_build_query(array_merge($filters, ['format' => 'excel']))) ?>" class="btn btn-success btn-sm">
+                    <i class="fas fa-file-excel ml-1"></i> Excel
+                </a>
+                <a href="<?= url('/timetable/export?' . http_build_query(array_merge($filters, ['format' => 'csv']))) ?>" class="btn btn-secondary btn-sm">
+                    <i class="fas fa-file-csv ml-1"></i> CSV
+                </a>
+                <a href="<?= url('/timetable/export?' . http_build_query(array_merge($filters, ['format' => 'html']))) ?>" class="btn btn-info btn-sm" target="_blank">
+                    <i class="fas fa-print ml-1"></i> طباعة
+                </a>
             </div>
             <?php endif; ?>
         </div>

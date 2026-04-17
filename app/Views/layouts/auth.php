@@ -6,20 +6,17 @@
     <title><?= e($__page_title ?? 'تسجيل الدخول') ?> | <?= e(config('app.name', 'نظام الجداول')) ?></title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Changa:wght@500;700&family=Tajawal:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.rtl.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="<?= url('/assets/css/custom.css') ?>">
 
     <style>
         body { font-family: 'Tajawal', sans-serif !important; }
-        .login-page { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
-        .login-box { width: 400px; }
-        .login-logo b { color: #fff; font-weight: 700; }
-        .card { border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,.2); }
     </style>
 </head>
-<body class="hold-transition login-page" dir="rtl">
+<body class="hold-transition login-page auth-modern" dir="rtl">
 
 <div class="login-box">
     <div class="login-logo">

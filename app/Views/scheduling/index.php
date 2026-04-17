@@ -6,9 +6,11 @@ $__breadcrumb = [['label' => 'الجدولة']];
 
 <!-- Status Banner -->
 <?php if ($canSchedule): ?>
-<div class="alert alert-success">
-    <i class="fas fa-check-circle ml-1"></i> <strong>دورك الآن!</strong> يمكنك إضافة حصصك في الجدول.
-    <form method="POST" action="<?= url('/scheduling/pass-role') ?>" class="d-inline float-left">
+<div class="alert alert-success d-flex flex-wrap align-items-center justify-content-between">
+    <div class="mb-2 mb-sm-0">
+        <i class="fas fa-check-circle ml-1"></i> <strong>دورك الآن!</strong> يمكنك إضافة حصصك في الجدول.
+    </div>
+    <form method="POST" action="<?= url('/scheduling/pass-role') ?>" class="m-0">
         <?= csrf_field() ?>
         <button type="submit" class="btn btn-outline-dark btn-sm" onclick="return confirm('هل تريد تمرير الدور للعضو التالي؟')">
             <i class="fas fa-forward ml-1"></i> تمرير الدور

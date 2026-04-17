@@ -7,7 +7,7 @@
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Changa:wght@500;700&family=Tajawal:wght@300;400;500;700&display=swap" rel="stylesheet">
 
     <!-- Bootstrap RTL + AdminLTE -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.rtl.min.css">
@@ -32,7 +32,7 @@
     <link rel="stylesheet" href="<?= url('/assets/css/custom.css') ?>">
     <?php $this->yield('styles'); ?>
 </head>
-<body class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed">
+<body class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed app-modern-theme">
 <div class="wrapper">
 
     <!-- Navbar -->
@@ -46,13 +46,13 @@
         <!-- Content Header (Breadcrumb) -->
         <div class="content-header">
             <div class="container-fluid">
-                <div class="row mb-2">
-                    <div class="col-sm-6">
+                <div class="row mb-2 align-items-center">
+                    <div class="col-sm-6 mb-2 mb-sm-0">
                         <h1 class="m-0"><?= e($__page_title ?? '') ?></h1>
                     </div>
-                    <div class="col-sm-6">
+                    <div class="col-sm-6 d-flex justify-content-sm-end justify-content-start">
                         <?php if (!empty($__breadcrumb)): ?>
-                        <ol class="breadcrumb float-sm-left">
+                        <ol class="breadcrumb">
                             <li class="breadcrumb-item"><a href="<?= url('/') ?>"><i class="fas fa-home"></i></a></li>
                             <?php foreach ($__breadcrumb as $crumb): ?>
                                 <?php if (!empty($crumb['url'])): ?>

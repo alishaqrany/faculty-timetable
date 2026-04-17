@@ -18,7 +18,7 @@
         language: {
             url: 'https://cdn.datatables.net/plug-ins/1.13.6/i18n/ar.json'
         },
-        dom: '<"row"<"col-sm-6"l><"col-sm-6"f>>rtip',
+        dom: '<"row align-items-center mb-2"<"col-md-6 mb-2 mb-md-0"l><"col-md-6"f>>rt<"row align-items-center mt-2"<"col-md-6 mb-2 mb-md-0"i><"col-md-6"p>>',
         pageLength: 15,
         autoWidth: false,
         scrollX: true,
@@ -31,8 +31,40 @@
         }
 
         // Auto-init DataTables and Select2
-        $('.data-table').DataTable();
-        $('.select2').select2({ theme: 'bootstrap4', dir: 'rtl' });
+        $('.data-table').each(function () {
+            if (!$.fn.DataTable.isDataTable(this)) {
+                $(this).DataTable();
+            }
+        });
+
+        $('.select2').each(function () {
+            var $el = $(this);
+            if ($el.data('select2')) {
+                return;
+            }
+            var $modal = $el.closest('.modal');
+            var opts = { theme: 'bootstrap4', dir: 'rtl', width: '100%' };
+            if ($modal.length) {
+                opts.dropdownParent = $modal;
+            }
+            $el.select2(opts);
+        });
+
+        $(document).on('shown.bs.modal', '.modal', function () {
+            var $modal = $(this);
+            $modal.find('.select2').each(function () {
+                var $el = $(this);
+                if ($el.data('select2')) {
+                    $el.select2('destroy');
+                }
+                $el.select2({
+                    theme: 'bootstrap4',
+                    dir: 'rtl',
+                    width: '100%',
+                    dropdownParent: $modal
+                });
+            });
+        });
 
         // On mobile, close sidebar after selecting a real navigation link.
         $(document).on('click', '.nav-sidebar .nav-link', function () {
