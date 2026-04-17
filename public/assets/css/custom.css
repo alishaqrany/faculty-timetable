@@ -1,0 +1,75 @@
+/* ── Custom RTL & Layout Overrides ─────────────────────────────── */
+
+body,
+.main-sidebar,
+.content-wrapper,
+.main-header,
+.main-footer {
+    font-family: 'Tajawal', sans-serif !important;
+}
+
+/* Sidebar RTL positioning */
+.content-wrapper { margin-right: 250px; margin-left: 0 !important; }
+.main-sidebar { right: 0; left: auto; }
+.main-header { margin-right: 250px; margin-left: 0 !important; }
+.main-footer { margin-right: 250px; margin-left: 0 !important; }
+
+@media (max-width: 991.98px) {
+    .content-wrapper,
+    .main-header,
+    .main-footer { margin-right: 0 !important; }
+}
+.sidebar-collapse .content-wrapper,
+.sidebar-collapse .main-header,
+.sidebar-collapse .main-footer { margin-right: 0 !important; }
+
+/* Sidebar nav */
+.nav-sidebar .nav-link { text-align: right; }
+.nav-sidebar .nav-link i,
+.nav-sidebar .nav-link .nav-icon { margin-left: 0.5rem; margin-right: 0; }
+.brand-link { text-align: right; }
+
+/* Table text alignment */
+.table th,
+.table td { text-align: right; }
+
+/* Breadcrumb */
+.breadcrumb { direction: rtl; }
+
+/* Dropdown */
+.dropdown-menu { text-align: right; }
+
+/* Select2 fix */
+.select2-container { width: 100% !important; }
+
+/* Card title */
+.card-title { font-size: 1.1rem; font-weight: 500; }
+
+/* Buttons */
+.btn { border-radius: 4px; }
+
+/* Small boxes (dashboard) */
+.small-box .icon { left: 10px; right: auto; }
+.small-box .inner { text-align: right; }
+
+/* ── Badge Colors ─────────────────────────────────────────────── */
+.badge-current { background-color: #28a745; color: #fff; }
+.badge-inactive { background-color: #dc3545; color: #fff; }
+
+/* ── Status Colors ────────────────────────────────────────────── */
+.status-active { color: #28a745; font-weight: 600; }
+.status-inactive { color: #dc3545; font-weight: 600; }
+
+/* ── DataTables RTL fixes ─────────────────────────────────────── */
+.dataTables_wrapper .dataTables_filter { text-align: left; }
+.dataTables_wrapper .dataTables_length { text-align: right; }
+
+/* ── Print styles ─────────────────────────────────────────────── */
+@media print {
+    .main-sidebar,
+    .main-header,
+    .main-footer,
+    .content-header,
+    .no-print { display: none !important; }
+    .content-wrapper { margin: 0 !important; }
+}

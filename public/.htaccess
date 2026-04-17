@@ -1,4 +1,39 @@
-RewriteEngine On
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^(.*)$ index.php [QSA,L]
+# ─── Timetable Management System v2 — Front Controller ──────
+# Routes all requests to index.php (except real files/dirs + install.php)
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # If you're behind a reverse proxy, uncomment:
+    # RewriteCond %{HTTP:X-Forwarded-Proto} =https
+    # RewriteRule .* - [E=HTTPS:on]
+
+    # Allow direct access to real files and directories (CSS, JS, images, install.php)
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+
+    # Route everything else through the front controller
+    RewriteRule ^(.*)$ index.php [QSA,L]
+</IfModule>
+
+# ─── Performance: Browser caching for assets ─────────────────
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType text/css "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
+    ExpiresByType image/png "access plus 1 month"
+    ExpiresByType image/jpeg "access plus 1 month"
+    ExpiresByType image/gif "access plus 1 month"
+    ExpiresByType image/svg+xml "access plus 1 month"
+    ExpiresByType font/woff2 "access plus 1 year"
+</IfModule>
+
+# ─── Security headers ────────────────────────────────────────
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set X-XSS-Protection "1; mode=block"
+</IfModule>
+
+# ─── Disable directory listing ───────────────────────────────
+Options -Indexes

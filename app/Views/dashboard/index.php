@@ -122,9 +122,37 @@ $__page_title = 'لوحة التحكم';
     </div>
 </div>
 
+<!-- Row 2: Occupancy & Workload Charts -->
+<div class="row">
+    <!-- Classroom Occupancy -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fas fa-door-open ml-1"></i> نسبة إشغال القاعات</h3>
+            </div>
+            <div class="card-body">
+                <canvas id="occupancyChart" style="height: 300px;"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Faculty Workload -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fas fa-user-clock ml-1"></i> عبء التدريس (حصص لكل عضو)</h3>
+            </div>
+            <div class="card-body">
+                <canvas id="workloadChart" style="height: 300px;"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
 <?php $this->section('scripts'); ?>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <script>
+// ── Day Distribution Chart ───────────────────────────────────────
 var dayData = <?= json_encode($dayData ?? [], JSON_UNESCAPED_UNICODE) ?>;
 var labels = dayData.map(function(d) { return d.day; });
 var counts = dayData.map(function(d) { return parseInt(d.cnt); });
@@ -145,6 +173,84 @@ new Chart(document.getElementById('dayChart'), {
         maintainAspectRatio: false,
         scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
         plugins: { legend: { display: false } }
+    }
+});
+
+// ── Classroom Occupancy Chart ────────────────────────────────────
+var occupancyData = <?= json_encode($classroomOccupancy ?? [], JSON_UNESCAPED_UNICODE) ?>;
+var totalSlots = <?= (int)($totalSlots ?? 0) ?>;
+
+new Chart(document.getElementById('occupancyChart'), {
+    type: 'bar',
+    data: {
+        labels: occupancyData.map(function(d) { return d.name; }),
+        datasets: [
+            {
+                label: 'حصص مستخدمة',
+                data: occupancyData.map(function(d) { return parseInt(d.used_slots); }),
+                backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1,
+                borderRadius: 4,
+            },
+            {
+                label: 'إجمالي الفترات المتاحة',
+                data: occupancyData.map(function() { return totalSlots; }),
+                backgroundColor: 'rgba(201, 203, 207, 0.3)',
+                borderColor: 'rgba(201, 203, 207, 0.6)',
+                borderWidth: 1,
+                borderRadius: 4,
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        indexAxis: 'y',
+        scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } } },
+        plugins: {
+            legend: { position: 'bottom' },
+            tooltip: {
+                callbacks: {
+                    afterBody: function(ctx) {
+                        if (ctx[0].datasetIndex === 0 && totalSlots > 0) {
+                            var pct = ((ctx[0].parsed.x / totalSlots) * 100).toFixed(1);
+                            return 'نسبة الإشغال: ' + pct + '%';
+                        }
+                    }
+                }
+            }
+        }
+    }
+});
+
+// ── Faculty Workload Chart ───────────────────────────────────────
+var workloadData = <?= json_encode($facultyWorkload ?? [], JSON_UNESCAPED_UNICODE) ?>;
+var wColors = ['#007bff','#28a745','#ffc107','#dc3545','#6f42c1','#fd7e14','#20c997','#e83e8c','#17a2b8','#6c757d'];
+
+new Chart(document.getElementById('workloadChart'), {
+    type: 'doughnut',
+    data: {
+        labels: workloadData.map(function(d) { return d.name; }),
+        datasets: [{
+            data: workloadData.map(function(d) { return parseInt(d.session_count); }),
+            backgroundColor: wColors.slice(0, workloadData.length),
+            borderWidth: 2,
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { position: 'bottom', labels: { font: { family: 'Tajawal' } } },
+            tooltip: {
+                callbacks: {
+                    label: function(ctx) {
+                        return ctx.label + ': ' + ctx.parsed + ' حصة';
+                    }
+                }
+            }
+        }
     }
 });
 </script>

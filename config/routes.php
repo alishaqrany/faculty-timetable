@@ -43,6 +43,14 @@ $router->group('', ['AuthMiddleware', 'CsrfMiddleware'], function (Router $route
     $router->get('/timetable', 'TimetableController@index');
     $router->get('/timetable/export', 'TimetableController@export');
 
+    // Academic Years
+    $router->resource('/academic-years', 'AcademicYearController');
+    $router->post('/academic-years/{id}/set-current', 'AcademicYearController@setCurrent');
+
+    // Semesters
+    $router->resource('/semesters', 'SemesterController');
+    $router->post('/semesters/{id}/set-current', 'SemesterController@setCurrent');
+
     // Users Management
     $router->resource('/users', 'UserController');
 
@@ -62,11 +70,18 @@ $router->group('', ['AuthMiddleware', 'CsrfMiddleware'], function (Router $route
 });
 
 // ── API routes ─────────────────────────────────────────────────────
-// API login (no auth required)
-$router->post('/api/auth/login', 'Api\\AuthController@login');
+// API login (no auth required, but rate limited)
+$router->group('/api/auth', ['RateLimitMiddleware'], function (Router $router) {
+    $router->post('/login', 'Api\\AuthController@login');
+});
 
-// API authenticated routes
-$router->group('/api', ['ApiAuthMiddleware'], function (Router $router) {
+// API authenticated routes (rate limited)
+$router->group('/api', ['RateLimitMiddleware', 'ApiAuthMiddleware'], function (Router $router) {
     $router->get('/timetable', 'Api\\TimetableController@index');
     $router->get('/departments', 'Api\\TimetableController@departments');
+    $router->get('/members', 'Api\\TimetableController@members');
+    $router->get('/classrooms', 'Api\\TimetableController@classrooms');
+    $router->get('/subjects', 'Api\\TimetableController@subjects');
+    $router->get('/sections', 'Api\\TimetableController@sections');
+    $router->get('/sessions', 'Api\\TimetableController@sessions');
 });

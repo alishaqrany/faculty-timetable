@@ -1,3 +1,3 @@
 <?php
-header("Location: ../table_query.php", true, 302);
+header("Location: table_query.php", true, 302);
 exit();

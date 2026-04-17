@@ -1,5 +1,31 @@
-RewriteEngine On
-RewriteRule ^$ public/ [L]
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^(.+)$ public/$1 [L]
+# ─── Timetable Management System v2 ──────────────────────────
+# Redirects all requests to public/ directory
+# This allows the app to run from a subfolder like /timetable/
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Redirect root to public/
+    RewriteRule ^$ public/ [L]
+
+    # Pass real files/dirs through, forward everything else to public/
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.+)$ public/$1 [L]
+</IfModule>
+
+# ─── Security: Deny access to sensitive directories ─────────
+<IfModule mod_rewrite.c>
+    RewriteRule ^(app|core|config|database|storage|_legacy)/ - [F,L]
+</IfModule>
+
+# Fallback: deny direct access via FilesMatch
+<FilesMatch "\.(env|lock|md|json|log)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order deny,allow
+        Deny from all
+    </IfModule>
+</FilesMatch>

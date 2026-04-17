@@ -45,12 +45,26 @@ function menuOpen(string $path, string $current): string {
                 </li>
 
                 <!-- Data Management -->
-                <li class="nav-item has-treeview <?= menuOpen('/departments', $current) . menuOpen('/levels', $current) . menuOpen('/classrooms', $current) . menuOpen('/sessions', $current) ?>">
+                <li class="nav-item has-treeview <?= menuOpen('/departments', $current) . menuOpen('/levels', $current) . menuOpen('/classrooms', $current) . menuOpen('/sessions', $current) . menuOpen('/academic-years', $current) . menuOpen('/semesters', $current) ?>">
                     <a href="#" class="nav-link">
                         <i class="nav-icon fas fa-database"></i>
                         <p>البيانات الأساسية <i class="fas fa-angle-left right"></i></p>
                     </a>
                     <ul class="nav nav-treeview">
+                        <?php if (can('academic_years.view')): ?>
+                        <li class="nav-item">
+                            <a href="<?= url('/academic-years') ?>" class="nav-link <?= isActive('/academic-years', $current) ?>">
+                                <i class="far fa-circle nav-icon"></i> <p>السنوات الأكاديمية</p>
+                            </a>
+                        </li>
+                        <?php endif; ?>
+                        <?php if (can('semesters.view')): ?>
+                        <li class="nav-item">
+                            <a href="<?= url('/semesters') ?>" class="nav-link <?= isActive('/semesters', $current) ?>">
+                                <i class="far fa-circle nav-icon"></i> <p>الفصول الدراسية</p>
+                            </a>
+                        </li>
+                        <?php endif; ?>
                         <?php if (can('departments.view')): ?>
                         <li class="nav-item">
                             <a href="<?= url('/departments') ?>" class="nav-link <?= isActive('/departments', $current) ?>">

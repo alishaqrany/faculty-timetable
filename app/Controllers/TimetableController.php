@@ -70,24 +70,45 @@ class TimetableController extends \Controller
 
         $entries = Timetable::allWithDetails($filters);
 
-        if ($format === 'html') {
-            $deptName = '';
-            $levelName = '';
-            if (!empty($filters['department_id'])) {
-                $dept = Department::find((int)$filters['department_id']);
-                $deptName = $dept['department_name'] ?? '';
-            }
-            if (!empty($filters['level_id'])) {
-                $level = Level::find((int)$filters['level_id']);
-                $levelName = $level['level_name'] ?? '';
-            }
-            $pivotData = Timetable::pivotTable(
-                (int)$filters['department_id'],
-                (int)$filters['level_id']
-            );
-            ExportService::timetableHtml($pivotData, $deptName, $levelName);
-        } else {
-            ExportService::timetableCsv($entries);
+        $deptName = '';
+        $levelName = '';
+        if (!empty($filters['department_id'])) {
+            $dept = Department::find((int)$filters['department_id']);
+            $deptName = $dept['department_name'] ?? '';
+        }
+        if (!empty($filters['level_id'])) {
+            $level = Level::find((int)$filters['level_id']);
+            $levelName = $level['level_name'] ?? '';
+        }
+
+        switch ($format) {
+            case 'pdf':
+                $pivotData = Timetable::pivotTable(
+                    (int)($filters['department_id'] ?? 0),
+                    (int)($filters['level_id'] ?? 0)
+                );
+                $pivotData['entries'] = $entries;
+                $institution = \Database::getInstance()->fetchColumn(
+                    "SELECT setting_value FROM settings WHERE setting_key = 'institution_name'"
+                ) ?? '';
+                ExportService::timetablePdf($pivotData, $deptName, $levelName, $institution);
+                break;
+
+            case 'excel':
+                ExportService::timetableExcel($entries, 'timetable_' . date('Y-m-d') . '.xls');
+                break;
+
+            case 'html':
+                $pivotData = Timetable::pivotTable(
+                    (int)($filters['department_id'] ?? 0),
+                    (int)($filters['level_id'] ?? 0)
+                );
+                $pivotData['entries'] = $entries;
+                ExportService::timetableHtml($pivotData, $deptName, $levelName);
+                break;
+
+            default:
+                ExportService::timetableCsv($entries, 'timetable_' . date('Y-m-d') . '.csv');
         }
     }
 }

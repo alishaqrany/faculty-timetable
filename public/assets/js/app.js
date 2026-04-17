@@ -1,0 +1,78 @@
+/**
+ * App-wide JavaScript utilities
+ */
+(function ($) {
+    'use strict';
+
+    // ── Toastr RTL Config ────────────────────────────────────────
+    toastr.options = {
+        positionClass: 'toast-top-left',
+        closeButton: true,
+        progressBar: true,
+        rtl: true,
+        timeOut: 4000,
+    };
+
+    // ── DataTables Arabic defaults ───────────────────────────────
+    $.extend(true, $.fn.dataTable.defaults, {
+        language: {
+            url: 'https://cdn.datatables.net/plug-ins/1.13.6/i18n/ar.json'
+        },
+        dom: '<"row"<"col-sm-6"l><"col-sm-6"f>>rtip',
+        pageLength: 15,
+    });
+
+    // ── Init on DOM Ready ────────────────────────────────────────
+    $(function () {
+        // Auto-init DataTables and Select2
+        $('.data-table').DataTable();
+        $('.select2').select2({ theme: 'bootstrap4', dir: 'rtl' });
+
+        // SweetAlert delete confirmation
+        $(document).on('click', '.btn-delete', function (e) {
+            e.preventDefault();
+            var form = $(this).closest('form');
+            Swal.fire({
+                title: 'هل أنت متأكد؟',
+                text: 'لا يمكن التراجع عن هذا الإجراء!',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'نعم، احذف',
+                cancelButtonText: 'إلغاء'
+            }).then(function (result) {
+                if (result.isConfirmed) {
+                    form.submit();
+                }
+            });
+        });
+
+        // Set-current confirmation (for academic years / semesters)
+        $(document).on('click', '.btn-set-current', function (e) {
+            e.preventDefault();
+            var form = $(this).closest('form');
+            var label = $(this).data('label') || '';
+            Swal.fire({
+                title: 'تعيين كافتراضي؟',
+                text: label ? 'سيتم تعيين "' + label + '" كالحالي.' : 'هل تريد المتابعة؟',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#28a745',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'نعم',
+                cancelButtonText: 'إلغاء'
+            }).then(function (result) {
+                if (result.isConfirmed) {
+                    form.submit();
+                }
+            });
+        });
+
+        // Auto-dismiss alerts after 6 seconds
+        setTimeout(function () {
+            $('.alert-dismissible').fadeOut(500);
+        }, 6000);
+    });
+
+})(jQuery);

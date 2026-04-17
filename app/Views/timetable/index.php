@@ -61,12 +61,20 @@ $__breadcrumb = [['label' => 'الجدول الدراسي']];
             <a href="<?= url('/timetable') ?>" class="btn btn-secondary">إعادة تعيين</a>
             <?php if ($hasFilter && can('timetable.export')): ?>
             <div class="float-left">
-                <a href="<?= url('/timetable/export?' . http_build_query(array_merge($filters, ['format' => 'csv']))) ?>" class="btn btn-success btn-sm">
-                    <i class="fas fa-file-csv ml-1"></i> تصدير CSV
-                </a>
-                <a href="<?= url('/timetable/export?' . http_build_query(array_merge($filters, ['format' => 'html']))) ?>" class="btn btn-info btn-sm" target="_blank">
-                    <i class="fas fa-print ml-1"></i> طباعة
-                </a>
+                <div class="btn-group" role="group">
+                    <a href="<?= url('/timetable/export?' . http_build_query(array_merge($filters, ['format' => 'pdf']))) ?>" class="btn btn-danger btn-sm" target="_blank">
+                        <i class="fas fa-file-pdf ml-1"></i> PDF
+                    </a>
+                    <a href="<?= url('/timetable/export?' . http_build_query(array_merge($filters, ['format' => 'excel']))) ?>" class="btn btn-success btn-sm">
+                        <i class="fas fa-file-excel ml-1"></i> Excel
+                    </a>
+                    <a href="<?= url('/timetable/export?' . http_build_query(array_merge($filters, ['format' => 'csv']))) ?>" class="btn btn-secondary btn-sm">
+                        <i class="fas fa-file-csv ml-1"></i> CSV
+                    </a>
+                    <a href="<?= url('/timetable/export?' . http_build_query(array_merge($filters, ['format' => 'html']))) ?>" class="btn btn-info btn-sm" target="_blank">
+                        <i class="fas fa-print ml-1"></i> طباعة
+                    </a>
+                </div>
             </div>
             <?php endif; ?>
         </div>

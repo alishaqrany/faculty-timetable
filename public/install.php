@@ -1,9 +1,14 @@
 <?php
 /**
  * Install Wizard for Timetable Management System v2
- * 
- * Multi-step installer: checks requirements, DB setup, runs migrations & seeds.
- * After successful install, redirects to login.
+ *
+ * 6-step installer:
+ *   1. Requirements check
+ *   2. Database configuration
+ *   3. Run migrations & seeds
+ *   4. Create admin account
+ *   5. System settings (app name, timezone, base URL)
+ *   6. Completion
  */
 session_start();
 
@@ -16,17 +21,16 @@ $step    = $_GET['step'] ?? '1';
 $error   = '';
 $success = '';
 $dbCfg   = require APP_ROOT . '/config/database.php';
+$totalSteps = 6;
 
 // ─── Step Handlers ──────────────────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($step === '1') {
-        // Requirements check — just move to next step
         header('Location: install.php?step=2');
         exit;
     }
 
     if ($step === '2') {
-        // Save DB config & test connection
         $host = trim($_POST['host'] ?? 'localhost');
         $user = trim($_POST['username'] ?? 'root');
         $pass = $_POST['password'] ?? '';
@@ -35,18 +39,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!$host || !$user || !$name) {
             $error = 'يرجى ملء جميع الحقول المطلوبة.';
         } else {
-            // Test bare connection (no DB selected yet)
             try {
                 $testConn = new mysqli($host, $user, $pass);
                 if ($testConn->connect_error) {
                     throw new Exception($testConn->connect_error);
                 }
-                // Create DB if not exists
-                $testConn->query("CREATE DATABASE IF NOT EXISTS `" . $testConn->real_escape_string($name) . "` 
+                $testConn->query("CREATE DATABASE IF NOT EXISTS `" . $testConn->real_escape_string($name) . "`
                     CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
                 $testConn->close();
 
-                // Write config/database.php
                 $configContent = "<?php\n\nreturn [\n"
                     . "    'host'     => " . var_export($host, true) . ",\n"
                     . "    'username' => " . var_export($user, true) . ",\n"
@@ -65,23 +66,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($step === '3') {
-        // Run migrations + seeds
         try {
             $dbCfg = require APP_ROOT . '/config/database.php';
             $db = Database::connectWith($dbCfg['host'], $dbCfg['username'], $dbCfg['password'], $dbCfg['database']);
 
-            // Create migrations tracking table
             $db->raw("CREATE TABLE IF NOT EXISTS `migrations` (
                 `id` INT AUTO_INCREMENT PRIMARY KEY,
                 `migration` VARCHAR(255) NOT NULL,
                 `ran_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
 
-            // Run migrations
             $migrationDir = APP_ROOT . '/database/migrations';
             $files = glob($migrationDir . '/*.php');
             sort($files);
-            $migrated = 0;
 
             foreach ($files as $file) {
                 $filename = basename($file);
@@ -92,11 +89,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $migration($db);
                     }
                     $db->insert('migrations', ['migration' => $filename]);
-                    $migrated++;
                 }
             }
 
-            // Run seeds
             $seedDir = APP_ROOT . '/database/seeds';
             $seedFiles = glob($seedDir . '/*.php');
             sort($seedFiles);
@@ -108,13 +103,132 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
 
-            // Mark installed
-            file_put_contents(APP_ROOT . '/storage/installed.lock', date('Y-m-d H:i:s'));
-
             header('Location: install.php?step=4');
             exit;
         } catch (Exception $e) {
             $error = 'خطأ أثناء تنفيذ التهيئة: ' . htmlspecialchars($e->getMessage());
+        }
+    }
+
+    if ($step === '4') {
+        // Create custom admin account
+        $adminUser = trim($_POST['admin_username'] ?? '');
+        $adminPass = $_POST['admin_password'] ?? '';
+        $adminPass2 = $_POST['admin_password2'] ?? '';
+        $adminName = trim($_POST['admin_name'] ?? 'مدير النظام');
+
+        if (!$adminUser || !$adminPass) {
+            $error = 'اسم المستخدم وكلمة المرور مطلوبان.';
+        } elseif (strlen($adminPass) < 6) {
+            $error = 'كلمة المرور يجب أن تكون 6 أحرف على الأقل.';
+        } elseif ($adminPass !== $adminPass2) {
+            $error = 'كلمتا المرور غير متطابقتين.';
+        } else {
+            try {
+                $dbCfg = require APP_ROOT . '/config/database.php';
+                $db = Database::connectWith($dbCfg['host'], $dbCfg['username'], $dbCfg['password'], $dbCfg['database']);
+
+                // Get admin role
+                $adminRole = $db->fetch("SELECT id FROM roles WHERE role_slug = 'admin' LIMIT 1");
+                $roleId = $adminRole ? (int)$adminRole['id'] : 1;
+
+                // Check if admin user already exists (from seed)
+                $existing = $db->fetch("SELECT id FROM users WHERE username = ?", [$adminUser]);
+
+                if ($existing) {
+                    // Update the seeded admin account
+                    $db->raw("UPDATE users SET password = '" . $db->getConnection()->real_escape_string(password_hash($adminPass, PASSWORD_DEFAULT)) . "' WHERE id = " . (int)$existing['id']);
+                    // Update member name
+                    $member = $db->fetch("SELECT member_id FROM users WHERE id = ?", [(int)$existing['id']]);
+                    if ($member && $member['member_id']) {
+                        $db->update('faculty_members', ['member_name' => $adminName], ['member_id' => (int)$member['member_id']]);
+                    }
+                } else {
+                    // Create new admin member
+                    $memberId = $db->insert('faculty_members', [
+                        'member_name' => $adminName,
+                        'degree'      => 'غير محدد',
+                        'join_date'   => date('Y-m-d'),
+                        'is_active'   => 1,
+                    ]);
+                    // Create new admin user
+                    $db->insert('users', [
+                        'username'            => $adminUser,
+                        'password'            => password_hash($adminPass, PASSWORD_DEFAULT),
+                        'member_id'           => $memberId,
+                        'role_id'             => $roleId,
+                        'registration_status' => 1,
+                        'is_active'           => 1,
+                    ]);
+                }
+
+                // Store username in session for display on completion page
+                $_SESSION['install_admin_user'] = $adminUser;
+
+                header('Location: install.php?step=5');
+                exit;
+            } catch (Exception $e) {
+                $error = 'خطأ أثناء إنشاء حساب المدير: ' . htmlspecialchars($e->getMessage());
+            }
+        }
+    }
+
+    if ($step === '5') {
+        // Save system settings
+        $appName  = trim($_POST['app_name'] ?? 'نظام إدارة الجداول الدراسية');
+        $appUrl   = trim($_POST['app_url'] ?? '');
+        $basePath = trim($_POST['base_path'] ?? '');
+        $timezone = trim($_POST['timezone'] ?? 'Asia/Riyadh');
+
+        try {
+            // Auto-detect URL if empty
+            if (!$appUrl) {
+                $proto = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+                $host  = $_SERVER['HTTP_HOST'] ?? 'localhost';
+                $dir   = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
+                $appUrl = $proto . '://' . $host . $dir;
+            }
+            if (!$basePath) {
+                $basePath = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
+            }
+
+            // Write config/app.php
+            $appConfig = "<?php\n\nreturn [\n"
+                . "    'name'      => " . var_export($appName, true) . ",\n"
+                . "    'url'       => " . var_export(rtrim($appUrl, '/'), true) . ",\n"
+                . "    'base_path' => " . var_export($basePath, true) . ",\n"
+                . "    'timezone'  => " . var_export($timezone, true) . ",\n"
+                . "    'debug'     => false,\n"
+                . "    'lang'      => 'ar',\n"
+                . "    'charset'   => 'UTF-8',\n"
+                . "    'per_page'  => 15,\n"
+                . "];\n";
+            file_put_contents(APP_ROOT . '/config/app.php', $appConfig);
+
+            // Save institution name in settings table
+            $dbCfg = require APP_ROOT . '/config/database.php';
+            $db = Database::connectWith($dbCfg['host'], $dbCfg['username'], $dbCfg['password'], $dbCfg['database']);
+            $existing = $db->fetch("SELECT id FROM settings WHERE setting_key = 'institution_name'");
+            if ($existing) {
+                $db->update('settings', ['setting_value' => $appName], ['id' => (int)$existing['id']]);
+            } else {
+                $db->insert('settings', ['setting_key' => 'institution_name', 'setting_value' => $appName]);
+            }
+
+            // Mark installed
+            if (!is_dir(APP_ROOT . '/storage')) {
+                @mkdir(APP_ROOT . '/storage', 0755, true);
+            }
+            file_put_contents(APP_ROOT . '/storage/installed.lock', json_encode([
+                'installed_at' => date('Y-m-d H:i:s'),
+                'php_version'  => PHP_VERSION,
+                'app_version'  => '2.0.0',
+            ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+
+            header('Location: install.php?step=6');
+            exit;
+        } catch (Exception $e) {
+            $error = 'خطأ أثناء حفظ الإعدادات: ' . htmlspecialchars($e->getMessage());
         }
     }
 }
@@ -133,6 +247,21 @@ $allPassed = !in_array(false, array_column($requirements, 'ok'), true);
 
 // Check if already installed
 $isInstalled = file_exists(APP_ROOT . '/storage/installed.lock');
+
+// Auto-detect base URL for step 5
+$autoUrl  = '';
+$autoBase = '';
+if ($step === '5') {
+    $proto    = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+    $host     = $_SERVER['HTTP_HOST'] ?? 'localhost';
+    $dir      = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
+    $autoUrl  = $proto . '://' . $host . $dir;
+    $autoBase = $dir;
+}
+
+// Read current app config for step 5 defaults
+$appCfg = @include(APP_ROOT . '/config/app.php');
+if (!is_array($appCfg)) $appCfg = [];
 ?>
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
@@ -159,6 +288,9 @@ $isInstalled = file_exists(APP_ROOT . '/storage/installed.lock');
         .req-item:last-child { border: none; }
         .badge-ok { background: #28a745; color: #fff; padding: 4px 12px; border-radius: 20px; font-size: .85rem; }
         .badge-fail { background: #dc3545; color: #fff; padding: 4px 12px; border-radius: 20px; font-size: .85rem; }
+        .step-label { font-size: .7rem; margin-top: 4px; color: rgba(255,255,255,.6); }
+        .step-col { text-align: center; }
+        .step-col.active .step-label { color: #fff; }
     </style>
 </head>
 <body>
@@ -168,10 +300,11 @@ $isInstalled = file_exists(APP_ROOT . '/storage/installed.lock');
         <h2><i class="fas fa-calendar-alt ml-2"></i>نظام إدارة الجداول الدراسية</h2>
         <p>معالج التثبيت — الإصدار 2.0</p>
         <div class="step-indicator">
-            <div class="step-dot <?= $step >= 1 ? ($step > 1 ? 'done' : 'active') : '' ?>"></div>
-            <div class="step-dot <?= $step >= 2 ? ($step > 2 ? 'done' : 'active') : '' ?>"></div>
-            <div class="step-dot <?= $step >= 3 ? ($step > 3 ? 'done' : 'active') : '' ?>"></div>
-            <div class="step-dot <?= $step >= 4 ? 'active' : '' ?>"></div>
+            <?php for ($i = 1; $i <= $totalSteps; $i++): ?>
+                <div class="step-col <?= $step == $i ? 'active' : '' ?>">
+                    <div class="step-dot <?= $step > $i ? 'done' : ($step == $i ? 'active' : '') ?>"></div>
+                </div>
+            <?php endfor; ?>
         </div>
     </div>
 
@@ -180,7 +313,7 @@ $isInstalled = file_exists(APP_ROOT . '/storage/installed.lock');
             <div class="alert alert-danger"><i class="fas fa-exclamation-circle ml-1"></i><?= $error ?></div>
         <?php endif; ?>
 
-        <?php if ($isInstalled && $step !== '4'): ?>
+        <?php if ($isInstalled && !in_array($step, ['6'])): ?>
             <div class="alert alert-warning">
                 <i class="fas fa-info-circle ml-1"></i>
                 النظام مثبت بالفعل. إذا كنت تريد إعادة التثبيت، احذف الملف <code>storage/installed.lock</code> أولاً.
@@ -191,7 +324,7 @@ $isInstalled = file_exists(APP_ROOT . '/storage/installed.lock');
 
         <?php elseif ($step === '1'): ?>
             <!-- Step 1: Requirements -->
-            <h4 class="mb-4"><i class="fas fa-clipboard-check ml-2 text-primary"></i>فحص المتطلبات</h4>
+            <h4 class="mb-4"><i class="fas fa-clipboard-check ml-2 text-primary"></i>الخطوة 1: فحص المتطلبات</h4>
             <?php foreach ($requirements as $req): ?>
                 <div class="req-item">
                     <span><?= $req['name'] ?></span>
@@ -214,7 +347,7 @@ $isInstalled = file_exists(APP_ROOT . '/storage/installed.lock');
 
         <?php elseif ($step === '2'): ?>
             <!-- Step 2: Database Config -->
-            <h4 class="mb-4"><i class="fas fa-database ml-2 text-primary"></i>إعداد قاعدة البيانات</h4>
+            <h4 class="mb-4"><i class="fas fa-database ml-2 text-primary"></i>الخطوة 2: إعداد قاعدة البيانات</h4>
             <form method="POST">
                 <div class="form-group">
                     <label>خادم قاعدة البيانات <span class="text-danger">*</span></label>
@@ -245,20 +378,12 @@ $isInstalled = file_exists(APP_ROOT . '/storage/installed.lock');
 
         <?php elseif ($step === '3'): ?>
             <!-- Step 3: Run Setup -->
-            <h4 class="mb-4"><i class="fas fa-cogs ml-2 text-primary"></i>تهيئة النظام</h4>
+            <h4 class="mb-4"><i class="fas fa-cogs ml-2 text-primary"></i>الخطوة 3: تهيئة قاعدة البيانات</h4>
             <p>سيتم الآن:</p>
             <ul class="pr-4">
                 <li>إنشاء جداول قاعدة البيانات (20 جدول)</li>
                 <li>إضافة البيانات الأساسية (الأدوار، الصلاحيات، الدرجات العلمية)</li>
-                <li>إنشاء حساب المدير الافتراضي</li>
             </ul>
-            <div class="alert alert-info">
-                <i class="fas fa-info-circle ml-1"></i>
-                <strong>بيانات المدير الافتراضي:</strong><br>
-                اسم المستخدم: <code>admin</code><br>
-                كلمة المرور: <code>admin123</code><br>
-                <small class="text-muted">(يرجى تغييرها بعد تسجيل الدخول)</small>
-            </div>
             <form method="POST">
                 <div class="d-flex justify-content-between mt-4">
                     <a href="install.php?step=2" class="btn btn-secondary">
@@ -271,17 +396,99 @@ $isInstalled = file_exists(APP_ROOT . '/storage/installed.lock');
             </form>
 
         <?php elseif ($step === '4'): ?>
-            <!-- Step 4: Done -->
+            <!-- Step 4: Create Admin Account -->
+            <h4 class="mb-4"><i class="fas fa-user-shield ml-2 text-primary"></i>الخطوة 4: إنشاء حساب المدير</h4>
+            <p class="text-muted mb-3">أنشئ حساب المدير الرئيسي للنظام.</p>
+            <form method="POST">
+                <div class="form-group">
+                    <label>الاسم الكامل <span class="text-danger">*</span></label>
+                    <input type="text" name="admin_name" class="form-control" value="<?= htmlspecialchars($_POST['admin_name'] ?? 'مدير النظام') ?>" required>
+                </div>
+                <div class="form-group">
+                    <label>اسم المستخدم <span class="text-danger">*</span></label>
+                    <input type="text" name="admin_username" class="form-control" value="<?= htmlspecialchars($_POST['admin_username'] ?? 'admin') ?>" required autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label>كلمة المرور <span class="text-danger">*</span></label>
+                    <input type="password" name="admin_password" class="form-control" required autocomplete="new-password" minlength="6">
+                    <small class="form-text text-muted">6 أحرف على الأقل</small>
+                </div>
+                <div class="form-group">
+                    <label>تأكيد كلمة المرور <span class="text-danger">*</span></label>
+                    <input type="password" name="admin_password2" class="form-control" required autocomplete="new-password" minlength="6">
+                </div>
+                <div class="d-flex justify-content-between mt-4">
+                    <a href="install.php?step=3" class="btn btn-secondary">
+                        <i class="fas fa-arrow-right mr-1"></i> السابق
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-arrow-left ml-1"></i> التالي — إعدادات النظام
+                    </button>
+                </div>
+            </form>
+
+        <?php elseif ($step === '5'): ?>
+            <!-- Step 5: System Settings -->
+            <h4 class="mb-4"><i class="fas fa-sliders-h ml-2 text-primary"></i>الخطوة 5: إعدادات النظام</h4>
+            <form method="POST">
+                <div class="form-group">
+                    <label>اسم المؤسسة / النظام</label>
+                    <input type="text" name="app_name" class="form-control" value="<?= htmlspecialchars($appCfg['name'] ?? 'نظام إدارة الجداول الدراسية') ?>">
+                </div>
+                <div class="form-group">
+                    <label>رابط التطبيق (URL)</label>
+                    <input type="text" name="app_url" class="form-control text-left" dir="ltr" value="<?= htmlspecialchars($appCfg['url'] ?? $autoUrl) ?>" placeholder="<?= htmlspecialchars($autoUrl) ?>">
+                    <small class="form-text text-muted">اتركه فارغًا للكشف التلقائي. مثال: <code dir="ltr"><?= htmlspecialchars($autoUrl) ?></code></small>
+                </div>
+                <div class="form-group">
+                    <label>المسار الأساسي (Base Path)</label>
+                    <input type="text" name="base_path" class="form-control text-left" dir="ltr" value="<?= htmlspecialchars($appCfg['base_path'] ?? $autoBase) ?>" placeholder="<?= htmlspecialchars($autoBase) ?>">
+                    <small class="form-text text-muted">اتركه فارغًا للكشف التلقائي. مثال: <code dir="ltr"><?= htmlspecialchars($autoBase) ?></code></small>
+                </div>
+                <div class="form-group">
+                    <label>المنطقة الزمنية</label>
+                    <select name="timezone" class="form-control">
+                        <?php
+                        $zones = ['Asia/Riyadh', 'Asia/Dubai', 'Africa/Cairo', 'Asia/Baghdad', 'Asia/Kuwait', 'Asia/Muscat', 'Asia/Aden', 'Asia/Bahrain', 'Asia/Qatar', 'UTC'];
+                        $current = $appCfg['timezone'] ?? 'Asia/Riyadh';
+                        foreach ($zones as $tz): ?>
+                            <option value="<?= $tz ?>" <?= $tz === $current ? 'selected' : '' ?>><?= $tz ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="d-flex justify-content-between mt-4">
+                    <a href="install.php?step=4" class="btn btn-secondary">
+                        <i class="fas fa-arrow-right mr-1"></i> السابق
+                    </a>
+                    <button type="submit" class="btn btn-success btn-lg">
+                        <i class="fas fa-check ml-1"></i> إكمال التثبيت
+                    </button>
+                </div>
+            </form>
+
+        <?php elseif ($step === '6'): ?>
+            <!-- Step 6: Done -->
             <div class="text-center">
                 <div style="font-size: 4rem; color: #28a745; margin-bottom: 20px;">
                     <i class="fas fa-check-circle"></i>
                 </div>
                 <h3 class="mb-3">تم التثبيت بنجاح!</h3>
-                <p class="text-muted mb-4">النظام جاهز للاستخدام. يمكنك الآن تسجيل الدخول باستخدام بيانات المدير.</p>
+                <p class="text-muted mb-4">النظام جاهز للاستخدام. يمكنك الآن تسجيل الدخول باستخدام حساب المدير الذي أنشأته.</p>
+                <?php if (!empty($_SESSION['install_admin_user'])): ?>
                 <div class="card card-body bg-light mb-4">
-                    <strong>بيانات الدخول:</strong><br>
-                    اسم المستخدم: <code>admin</code><br>
-                    كلمة المرور: <code>admin123</code>
+                    <strong>اسم المستخدم:</strong> <code><?= htmlspecialchars($_SESSION['install_admin_user']) ?></code>
+                </div>
+                <?php unset($_SESSION['install_admin_user']); ?>
+                <?php endif; ?>
+                <div class="alert alert-info text-right">
+                    <i class="fas fa-lightbulb ml-1"></i>
+                    <strong>نصائح البدء:</strong>
+                    <ul class="mb-0 mt-2 pr-3">
+                        <li>أضف الأقسام والمستويات والقاعات أولاً من قائمة "البيانات الأساسية"</li>
+                        <li>أضف أعضاء هيئة التدريس ثم المقررات والشُعب</li>
+                        <li>أنشئ الجدول الدراسي من قائمة "الجدولة"</li>
+                        <li>صدّر الجدول كـ PDF أو Excel من صفحة "الجدول الدراسي"</li>
+                    </ul>
                 </div>
                 <a href="index.php" class="btn btn-primary btn-lg btn-block">
                     <i class="fas fa-sign-in-alt ml-1"></i> الانتقال لتسجيل الدخول
