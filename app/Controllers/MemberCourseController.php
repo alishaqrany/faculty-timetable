@@ -44,6 +44,21 @@ class MemberCourseController extends \Controller
         ]);
         if ($data === false) $this->redirect('/member-courses/create', 'يرجى تصحيح الأخطاء', 'error');
 
+        $subject = Subject::find((int)$data['subject_id']);
+        $section = Section::find((int)$data['section_id']);
+        if (!$subject || !$section) {
+            $this->redirect('/member-courses/create', 'المقرر أو المجموعة غير موجود', 'error');
+        }
+
+        $sectionType = $section['section_type'] ?? 'شعبة';
+        $subjectType = $subject['subject_type'] ?? 'نظري';
+        if ($subjectType === 'نظري' && $sectionType !== 'شعبة') {
+            $this->redirect('/member-courses/create', 'المقرر النظري يجب ربطه بشعبة وليس سكشن', 'error');
+        }
+        if ($subjectType === 'عملي' && $sectionType !== 'سكشن') {
+            $this->redirect('/member-courses/create', 'المقرر العملي يجب ربطه بسكشن وليس شعبة', 'error');
+        }
+
         $id = MemberCourse::create($data);
         AuditService::log('CREATE', 'member_courses', $id, null, $data);
 
@@ -81,6 +96,21 @@ class MemberCourseController extends \Controller
             'section_id' => 'required|integer',
         ]);
         if ($data === false) $this->redirect("/member-courses/{$id}/edit", 'يرجى تصحيح الأخطاء', 'error');
+
+        $subject = Subject::find((int)$data['subject_id']);
+        $section = Section::find((int)$data['section_id']);
+        if (!$subject || !$section) {
+            $this->redirect("/member-courses/{$id}/edit", 'المقرر أو المجموعة غير موجود', 'error');
+        }
+
+        $sectionType = $section['section_type'] ?? 'شعبة';
+        $subjectType = $subject['subject_type'] ?? 'نظري';
+        if ($subjectType === 'نظري' && $sectionType !== 'شعبة') {
+            $this->redirect("/member-courses/{$id}/edit", 'المقرر النظري يجب ربطه بشعبة وليس سكشن', 'error');
+        }
+        if ($subjectType === 'عملي' && $sectionType !== 'سكشن') {
+            $this->redirect("/member-courses/{$id}/edit", 'المقرر العملي يجب ربطه بسكشن وليس شعبة', 'error');
+        }
 
         MemberCourse::updateById((int)$id, $data);
         AuditService::log('UPDATE', 'member_courses', (int)$id, $course, $data);

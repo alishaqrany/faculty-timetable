@@ -18,7 +18,7 @@ class SchedulingService
 
         // Get member_course details
         $mc = $db->fetch(
-            "SELECT mc.*, s.department_id, s.level_id, sec.section_id, mc.member_id
+            "SELECT mc.*, s.department_id, s.level_id, sec.section_id, sec.parent_section_id, mc.member_id
              FROM member_courses mc
              JOIN subjects s ON mc.subject_id = s.subject_id
              JOIN sections sec ON mc.section_id = sec.section_id
@@ -49,22 +49,31 @@ class SchedulingService
             $conflicts[] = "القاعة \"{$classroomConflict['classroom_name']}\" محجوزة في {$classroomConflict['day']} - {$classroomConflict['session_name']}";
         }
 
-        // 2. Section/Level conflict: same department+level+session (different section can't be at the same time for same level)
-        $params = array_merge([$sessionId, $mc['department_id'], $mc['level_id']], $baseParams);
+        // 2. Section/Hierarchy conflict: same section, parent section, or child section at same session
+        $params = array_merge([$sessionId], $baseParams);
+        
         $sectionConflict = $db->fetch(
             "SELECT t.*, sec.section_name, sess.session_name, sess.day
              FROM timetable t
              JOIN member_courses mc2 ON t.member_course_id = mc2.member_course_id
-             JOIN subjects sub ON mc2.subject_id = sub.subject_id
              JOIN sections sec ON mc2.section_id = sec.section_id
              JOIN sessions sess ON t.session_id = sess.session_id
-             WHERE t.session_id = ? AND sub.department_id = ? AND sub.level_id = ?
-             AND mc2.section_id = ? $excludeClause
+             WHERE t.session_id = ? $excludeClause
+               AND (
+                   sec.section_id = ? 
+                   OR sec.parent_section_id = ? 
+                   OR (? IS NOT NULL AND sec.section_id = ?)
+               )
              LIMIT 1",
-            array_merge($params, [$mc['section_id']])
+            array_merge($params, [
+                $mc['section_id'],
+                $mc['section_id'],
+                $mc['parent_section_id'],
+                $mc['parent_section_id']
+            ])
         );
         if ($sectionConflict) {
-            $conflicts[] = "الشعبة \"{$sectionConflict['section_name']}\" لديها حصة في نفس الفترة ({$sectionConflict['day']} - {$sectionConflict['session_name']})";
+            $conflicts[] = "يوجد تعارض مع شعبة/سكشن مرتبط: \"{$sectionConflict['section_name']}\" لديها حصة في نفس الفترة ({$sectionConflict['day']} - {$sectionConflict['session_name']})";
         }
 
         // 3. Faculty conflict: same member at same session

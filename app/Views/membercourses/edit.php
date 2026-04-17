@@ -21,21 +21,22 @@ $__breadcrumb = [['label' => 'تكليفات التدريس', 'url' => '/member-
                 </div>
                 <div class="form-group">
                     <label>المقرر <span class="text-danger">*</span></label>
-                    <select name="subject_id" class="form-control select2" required>
+                    <select name="subject_id" id="subject_id" class="form-control select2" required>
                         <option value="">-- اختر --</option>
                         <?php foreach ($subjects as $s): ?>
-                            <option value="<?= $s['subject_id'] ?>" <?= $course['subject_id'] == $s['subject_id'] ? 'selected' : '' ?>><?= e($s['subject_name']) ?></option>
+                            <option value="<?= $s['subject_id'] ?>" data-subject-type="<?= e($s['subject_type'] ?? 'نظري') ?>" <?= $course['subject_id'] == $s['subject_id'] ? 'selected' : '' ?>><?= e($s['subject_name']) ?> - <?= e($s['subject_type'] ?? 'نظري') ?></option>
                         <?php endforeach; ?>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>الشعبة <span class="text-danger">*</span></label>
-                    <select name="section_id" class="form-control select2" required>
+                    <label>المجموعة (شعبة/سكشن) <span class="text-danger">*</span></label>
+                    <select name="section_id" id="section_id" class="form-control select2" required>
                         <option value="">-- اختر --</option>
                         <?php foreach ($sections as $sec): ?>
-                            <option value="<?= $sec['section_id'] ?>" <?= $course['section_id'] == $sec['section_id'] ? 'selected' : '' ?>><?= e($sec['section_name']) ?></option>
+                            <option value="<?= $sec['section_id'] ?>" data-section-type="<?= e($sec['section_type'] ?? 'شعبة') ?>" <?= $course['section_id'] == $sec['section_id'] ? 'selected' : '' ?>><?= e($sec['section_name']) ?> [<?= e($sec['section_type'] ?? 'شعبة') ?>]<?= !empty($sec['parent_section_name']) ? ' - تابع لـ ' . e($sec['parent_section_name']) : '' ?></option>
                         <?php endforeach; ?>
                     </select>
+                    <small class="form-text text-muted" id="section_hint">المقرر النظري يرتبط بشعبة، والعملي يرتبط بسكشن.</small>
                 </div>
             </div>
             <div class="card-footer">
@@ -45,3 +46,48 @@ $__breadcrumb = [['label' => 'تكليفات التدريس', 'url' => '/member-
         </form>
     </div>
 </div></div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var subjectSelect = document.getElementById('subject_id');
+    var sectionSelect = document.getElementById('section_id');
+    var hint = document.getElementById('section_hint');
+
+    function getSubjectType() {
+        var subjectOption = subjectSelect.options[subjectSelect.selectedIndex];
+        if (!subjectOption) return '';
+        return (subjectOption.getAttribute('data-subject-type') || '').trim();
+    }
+
+    function syncSectionOptions() {
+        var subjectType = getSubjectType();
+        var allowedType = '';
+
+        if (subjectType === 'نظري') {
+            allowedType = 'شعبة';
+            hint.textContent = 'هذا مقرر نظري: اختر شعبة.';
+        } else if (subjectType === 'عملي') {
+            allowedType = 'سكشن';
+            hint.textContent = 'هذا مقرر عملي: اختر سكشن.';
+        } else {
+            hint.textContent = 'هذا مقرر نظري وعملي: يمكن الاختيار من شعبة أو سكشن.';
+        }
+
+        for (var i = 0; i < sectionSelect.options.length; i++) {
+            var option = sectionSelect.options[i];
+            if (!option.value) continue;
+
+            var secType = option.getAttribute('data-section-type') || 'شعبة';
+            option.hidden = !!allowedType && secType !== allowedType;
+        }
+
+        var selectedOption = sectionSelect.options[sectionSelect.selectedIndex];
+        if (selectedOption && selectedOption.hidden) {
+            sectionSelect.value = '';
+        }
+    }
+
+    subjectSelect.addEventListener('change', syncSectionOptions);
+    syncSectionOptions();
+});
+</script>

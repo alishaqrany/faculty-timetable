@@ -23,7 +23,12 @@ class SectionController extends \Controller
         $this->authorize('sections.create');
         $departments = Department::active();
         $levels = Level::active();
-        $this->render('sections.create', ['departments' => $departments, 'levels' => $levels]);
+        $parentSections = Section::parentOptions();
+        $this->render('sections.create', [
+            'departments'    => $departments,
+            'levels'         => $levels,
+            'parentSections' => $parentSections,
+        ]);
     }
 
     public function store(): void
@@ -33,11 +38,29 @@ class SectionController extends \Controller
 
         $data = $this->request->validate([
             'section_name'  => 'required|max:100',
+            'section_type'  => 'required|in:شعبة,سكشن',
             'department_id' => 'required|integer',
             'level_id'      => 'required|integer',
+            'parent_section_id' => 'integer',
             'capacity'      => 'integer',
         ]);
         if ($data === false) $this->redirect('/sections/create', 'يرجى تصحيح الأخطاء', 'error');
+
+        if ($data['section_type'] === 'سكشن') {
+            if (empty($data['parent_section_id'])) {
+                $this->redirect('/sections/create', 'يجب اختيار الشعبة الأب عند إنشاء سكشن', 'error');
+            }
+
+            $parent = Section::find((int)$data['parent_section_id']);
+            if (!$parent || ($parent['section_type'] ?? '') !== 'شعبة') {
+                $this->redirect('/sections/create', 'الشعبة الأب غير صالحة', 'error');
+            }
+
+            $data['department_id'] = (int)$parent['department_id'];
+            $data['level_id'] = (int)$parent['level_id'];
+        } else {
+            $data['parent_section_id'] = null;
+        }
 
         $data['is_active'] = 1;
         $id = Section::create($data);
@@ -54,7 +77,13 @@ class SectionController extends \Controller
 
         $departments = Department::active();
         $levels = Level::active();
-        $this->render('sections.edit', ['section' => $section, 'departments' => $departments, 'levels' => $levels]);
+        $parentSections = Section::parentOptions();
+        $this->render('sections.edit', [
+            'section'        => $section,
+            'departments'    => $departments,
+            'levels'         => $levels,
+            'parentSections' => $parentSections,
+        ]);
     }
 
     public function update(string $id): void
@@ -67,11 +96,33 @@ class SectionController extends \Controller
 
         $data = $this->request->validate([
             'section_name'  => 'required|max:100',
+            'section_type'  => 'required|in:شعبة,سكشن',
             'department_id' => 'required|integer',
             'level_id'      => 'required|integer',
+            'parent_section_id' => 'integer',
             'capacity'      => 'integer',
         ]);
         if ($data === false) $this->redirect("/sections/{$id}/edit", 'يرجى تصحيح الأخطاء', 'error');
+
+        if ($data['section_type'] === 'سكشن') {
+            if (empty($data['parent_section_id'])) {
+                $this->redirect("/sections/{$id}/edit", 'يجب اختيار الشعبة الأب عند إنشاء سكشن', 'error');
+            }
+
+            if ((int)$data['parent_section_id'] === (int)$id) {
+                $this->redirect("/sections/{$id}/edit", 'لا يمكن ربط السكشن بنفسه كشعبة أب', 'error');
+            }
+
+            $parent = Section::find((int)$data['parent_section_id']);
+            if (!$parent || ($parent['section_type'] ?? '') !== 'شعبة') {
+                $this->redirect("/sections/{$id}/edit", 'الشعبة الأب غير صالحة', 'error');
+            }
+
+            $data['department_id'] = (int)$parent['department_id'];
+            $data['level_id'] = (int)$parent['level_id'];
+        } else {
+            $data['parent_section_id'] = null;
+        }
 
         $data['is_active'] = $this->request->input('is_active', 1);
         Section::updateById((int)$id, $data);

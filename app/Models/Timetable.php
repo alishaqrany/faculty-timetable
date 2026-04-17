@@ -14,7 +14,8 @@ class Timetable extends \Model
     public static function allWithDetails(array $filters = []): array
     {
         $sql = "SELECT t.*, mc.member_id, mc.subject_id, mc.section_id,
-                       fm.member_name, s.subject_name, sec.section_name,
+                   fm.member_name, s.subject_name, sec.section_name, sec.section_type,
+                   sec.parent_section_id, parent.section_name AS parent_section_name,
                        c.classroom_name, sess.day, sess.session_name,
                        sess.start_time, sess.end_time,
                        d.department_name, d.department_id,
@@ -24,6 +25,7 @@ class Timetable extends \Model
                 JOIN faculty_members fm ON mc.member_id = fm.member_id
                 JOIN subjects s ON mc.subject_id = s.subject_id
                 JOIN sections sec ON mc.section_id = sec.section_id
+                LEFT JOIN sections parent ON sec.parent_section_id = parent.section_id
                 JOIN classrooms c ON t.classroom_id = c.classroom_id
                 JOIN sessions sess ON t.session_id = sess.session_id
                 JOIN departments d ON s.department_id = d.department_id

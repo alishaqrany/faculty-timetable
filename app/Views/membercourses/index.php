@@ -18,7 +18,7 @@ $__breadcrumb = [['label' => 'تكليفات التدريس']];
     <div class="card-body table-responsive p-0">
         <table class="table table-hover table-striped data-table">
             <thead>
-                <tr><th>#</th><th>عضو هيئة التدريس</th><th>المقرر</th><th>الشعبة</th><th>القسم</th><th>المستوى</th><th>إجراءات</th></tr>
+                <tr><th>#</th><th>عضو هيئة التدريس</th><th>المقرر</th><th>المجموعة</th><th>النوع</th><th>القسم</th><th>المستوى</th><th>إجراءات</th></tr>
             </thead>
             <tbody>
                 <?php foreach ($courses as $i => $c): ?>
@@ -26,7 +26,13 @@ $__breadcrumb = [['label' => 'تكليفات التدريس']];
                     <td><?= $i + 1 ?></td>
                     <td><?= e($c['member_name']) ?></td>
                     <td><?= e($c['subject_name']) ?></td>
-                    <td><?= e($c['section_name']) ?></td>
+                    <td>
+                        <?= e($c['section_name']) ?>
+                        <?php if (($c['section_type'] ?? 'شعبة') === 'سكشن' && !empty($c['parent_section_name'])): ?>
+                            <br><small class="text-muted">تابع لـ <?= e($c['parent_section_name']) ?></small>
+                        <?php endif; ?>
+                    </td>
+                    <td><?= e($c['section_type'] ?? 'شعبة') ?></td>
                     <td><?= e($c['department_name'] ?? '') ?></td>
                     <td><?= e($c['level_name'] ?? '') ?></td>
                     <td>
