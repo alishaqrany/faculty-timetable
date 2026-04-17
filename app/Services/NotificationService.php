@@ -35,4 +35,21 @@ class NotificationService
             error_log("NotificationService sendToRole error: " . $e->getMessage());
         }
     }
+
+    /**
+     * Send notification to all active users.
+     */
+    public static function sendToAll(string $title, ?string $message = null, string $type = 'info', ?string $link = null): void
+    {
+        try {
+            $users = \Database::getInstance()->fetchAll(
+                "SELECT id FROM users WHERE is_active = 1"
+            );
+            foreach ($users as $user) {
+                static::send($user['id'], $title, $message, $type, $link);
+            }
+        } catch (\Throwable $e) {
+            error_log("NotificationService sendToAll error: " . $e->getMessage());
+        }
+    }
 }

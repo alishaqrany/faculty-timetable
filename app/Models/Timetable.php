@@ -13,9 +13,19 @@ class Timetable extends \Model
 
     public static function allWithDetails(array $filters = []): array
     {
-        $sql = "SELECT t.*, mc.member_id, mc.subject_id, mc.section_id,
-                   fm.member_name, s.subject_name, sec.section_name, sec.section_type,
-                   sec.parent_section_id, parent.section_name AS parent_section_name,
+        $sql = "SELECT t.*, mc.member_id, mc.subject_id, mc.section_id, mc.assignment_type, mc.is_shared,
+                       fm.member_name, s.subject_name,
+                       (
+                         CASE 
+                           WHEN mc.assignment_type = 'عملي' THEN 
+                             (SELECT sec.section_name FROM sections sec WHERE sec.section_id = mc.section_id LIMIT 1)
+                           WHEN mc.assignment_type = 'نظري' AND mc.is_shared = 0 THEN
+                             (SELECT divi.division_name FROM divisions divi WHERE divi.division_id = mc.division_id LIMIT 1)
+                           WHEN mc.assignment_type = 'نظري' AND mc.is_shared = 1 THEN
+                             (SELECT CONCAT('محاضرة مشتركة (', COUNT(*), ' شعب)') FROM member_course_shared_divisions mcs WHERE mcs.member_course_id = mc.member_course_id)
+                           ELSE 'محاضرة عامة'
+                         END
+                       ) AS section_name,
                        c.classroom_name, sess.day, sess.session_name,
                        sess.start_time, sess.end_time,
                        d.department_name, d.department_id,
@@ -24,8 +34,6 @@ class Timetable extends \Model
                 JOIN member_courses mc ON t.member_course_id = mc.member_course_id
                 JOIN faculty_members fm ON mc.member_id = fm.member_id
                 JOIN subjects s ON mc.subject_id = s.subject_id
-                JOIN sections sec ON mc.section_id = sec.section_id
-                LEFT JOIN sections parent ON sec.parent_section_id = parent.section_id
                 JOIN classrooms c ON t.classroom_id = c.classroom_id
                 JOIN sessions sess ON t.session_id = sess.session_id
                 JOIN departments d ON s.department_id = d.department_id
@@ -79,7 +87,7 @@ class Timetable extends \Model
 
         foreach ($entries as $entry) {
             $key = $entry['day'] . '|' . $entry['session_name'];
-            $secName = $entry['section_name'];
+            $secName = $entry['section_name'] ?? 'محاضرة عامة';
             $sections[$secName] = true;
             $pivot[$key][$secName] = $entry;
 

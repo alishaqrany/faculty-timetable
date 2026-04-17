@@ -31,12 +31,12 @@ $__breadcrumb = [['label' => 'الجدولة']];
             <div class="row">
                 <div class="col-md-4">
                     <div class="form-group">
-                        <label>المقرر / المجموعة <span class="text-danger">*</span></label>
+                        <label>المقرر / الشعبة <span class="text-danger">*</span></label>
                         <select name="member_course_id" class="form-control select2" required>
                             <option value="">-- اختر --</option>
                             <?php foreach ($myCourses as $mc): ?>
                                 <option value="<?= $mc['member_course_id'] ?>">
-                                    <?= e($mc['subject_name']) ?> — <?= e($mc['section_name']) ?> [<?= e($mc['section_type'] ?? 'شعبة') ?>]
+                                    <?= e($mc['subject_name']) ?> — <?= e($mc['section_name'] ?: $mc['division_name']) ?>
                                 </option>
                             <?php endforeach; ?>
                         </select>
@@ -82,7 +82,7 @@ $__breadcrumb = [['label' => 'الجدولة']];
         <?php if (!empty($myEntries)): ?>
         <table class="table table-hover table-striped">
             <thead>
-                <tr><th>#</th><th>المقرر</th><th>المجموعة</th><th>النوع</th><th>القاعة</th><th>اليوم</th><th>الفترة</th><th>إجراءات</th></tr>
+                <tr><th>#</th><th>المقرر</th><th>الشعبة</th><th>القاعة</th><th>اليوم</th><th>الفترة</th><th>إجراءات</th></tr>
             </thead>
             <tbody>
                 <?php foreach ($myEntries as $i => $e): ?>
@@ -90,7 +90,6 @@ $__breadcrumb = [['label' => 'الجدولة']];
                     <td><?= $i + 1 ?></td>
                     <td><?= e($e['subject_name'] ?? '') ?></td>
                     <td><?= e($e['section_name'] ?? '') ?></td>
-                    <td><?= e($e['section_type'] ?? 'شعبة') ?></td>
                     <td><?= e($e['classroom_name'] ?? '') ?></td>
                     <td><?= e($e['day'] ?? '') ?></td>
                     <td><?= e($e['start_time'] ?? '') ?> - <?= e($e['end_time'] ?? '') ?></td>

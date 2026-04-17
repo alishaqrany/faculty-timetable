@@ -33,7 +33,7 @@
         <li class="nav-item dropdown">
             <a class="nav-link" data-toggle="dropdown" href="#">
                 <i class="fas fa-user-circle"></i>
-                <span class="mx-1"><?= e($auth['username'] ?? 'المستخدم') ?></span>
+                <span class="mx-1 d-none d-sm-inline"><?= e($auth['username'] ?? 'المستخدم') ?></span>
             </a>
             <div class="dropdown-menu dropdown-menu-left">
                 <a href="<?= url('/profile') ?>" class="dropdown-item">

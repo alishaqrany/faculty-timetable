@@ -11,11 +11,11 @@ $__breadcrumb = [['label' => 'الجدولة', 'url' => '/scheduling'], ['label'
             <?= csrf_field() ?>
             <div class="card-body">
                 <div class="form-group">
-                    <label>المقرر / المجموعة <span class="text-danger">*</span></label>
+                    <label>المقرر / الشعبة <span class="text-danger">*</span></label>
                     <select name="member_course_id" class="form-control select2" required>
                         <?php foreach ($myCourses as $mc): ?>
                             <option value="<?= $mc['member_course_id'] ?>" <?= $entry['member_course_id'] == $mc['member_course_id'] ? 'selected' : '' ?>>
-                                <?= e($mc['subject_name']) ?> — <?= e($mc['section_name']) ?> [<?= e($mc['section_type'] ?? 'شعبة') ?>]
+                                <?= e($mc['subject_name']) ?> — <?= e($mc['section_name'] ?: $mc['division_name']) ?>
                             </option>
                         <?php endforeach; ?>
                     </select>

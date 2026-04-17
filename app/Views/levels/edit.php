@@ -1,17 +1,17 @@
 <?php
 $this->layout('layouts.app');
-$__page_title = 'تعديل المستوى';
-$__breadcrumb = [['label' => 'المستويات', 'url' => '/levels'], ['label' => 'تعديل']];
+$__page_title = 'تعديل الفرقة';
+$__breadcrumb = [['label' => 'الفرق', 'url' => '/levels'], ['label' => 'تعديل']];
 ?>
 
 <div class="row"><div class="col-md-8">
     <div class="card card-warning">
-        <div class="card-header"><h3 class="card-title">تعديل بيانات المستوى</h3></div>
+        <div class="card-header"><h3 class="card-title">تعديل بيانات الفرقة</h3></div>
         <form method="POST" action="<?= url("/levels/{$level['level_id']}") ?>">
             <?= csrf_field() ?>
             <div class="card-body">
                 <div class="form-group">
-                    <label>اسم المستوى <span class="text-danger">*</span></label>
+                    <label>اسم الفرقة <span class="text-danger">*</span></label>
                     <input type="text" name="level_name" class="form-control" value="<?= e($level['level_name']) ?>" required>
                 </div>
                 <div class="form-group">

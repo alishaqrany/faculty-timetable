@@ -9,9 +9,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700&display=swap" rel="stylesheet">
 
-    <!-- AdminLTE + Bootstrap RTL -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
+    <!-- Bootstrap RTL + AdminLTE -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.rtl.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
 
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -81,9 +81,16 @@
     </div>
 
     <!-- Footer -->
-    <footer class="main-footer">
-        <strong>&copy; <?= date('Y') ?> <a href="<?= url('/') ?>"><?= e(config('app.name', 'نظام الجداول')) ?></a>.</strong>
-        جميع الحقوق محفوظة.
+    <footer class="main-footer app-footer">
+        <div class="d-flex flex-column flex-sm-row align-items-center justify-content-between">
+            <div>
+                <strong>&copy; <?= date('Y') ?> <a href="<?= url('/') ?>"><?= e(config('app.name', 'نظام الجداول')) ?></a></strong>
+                <span class="d-block d-sm-inline text-muted">جميع الحقوق محفوظة.</span>
+            </div>
+            <div class="text-muted small mt-2 mt-sm-0">
+                لوحة إدارة الجداول والجدولة الأكاديمية
+            </div>
+        </div>
     </footer>
 
 </div>

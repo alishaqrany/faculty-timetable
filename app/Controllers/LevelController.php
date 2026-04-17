@@ -38,14 +38,14 @@ class LevelController extends \Controller
         $id = Level::create($data);
         AuditService::log('CREATE', 'levels', $id, null, $data);
 
-        $this->redirect('/levels', 'تم إنشاء المستوى بنجاح ✓');
+        $this->redirect('/levels', 'تم إنشاء الفرقة بنجاح ✓');
     }
 
     public function edit(string $id): void
     {
         $this->authorize('levels.edit');
         $level = Level::find((int)$id);
-        if (!$level) $this->redirect('/levels', 'المستوى غير موجود', 'error');
+        if (!$level) $this->redirect('/levels', 'الفرقة غير موجودة', 'error');
         $this->render('levels.edit', ['level' => $level]);
     }
 
@@ -55,7 +55,7 @@ class LevelController extends \Controller
         $this->validateCsrf();
 
         $level = Level::find((int)$id);
-        if (!$level) $this->redirect('/levels', 'المستوى غير موجود', 'error');
+        if (!$level) $this->redirect('/levels', 'الفرقة غير موجودة', 'error');
 
         $data = $this->request->validate([
             'level_name' => 'required|max:200',
@@ -68,7 +68,7 @@ class LevelController extends \Controller
         Level::updateById((int)$id, $data);
         AuditService::log('UPDATE', 'levels', (int)$id, $level, $data);
 
-        $this->redirect('/levels', 'تم تحديث المستوى بنجاح ✓');
+        $this->redirect('/levels', 'تم تحديث الفرقة بنجاح ✓');
     }
 
     public function destroy(string $id): void
@@ -77,11 +77,11 @@ class LevelController extends \Controller
         $this->validateCsrf();
 
         $level = Level::find((int)$id);
-        if (!$level) $this->redirect('/levels', 'المستوى غير موجود', 'error');
+        if (!$level) $this->redirect('/levels', 'الفرقة غير موجودة', 'error');
 
         Level::destroy((int)$id);
         AuditService::log('DELETE', 'levels', (int)$id, $level);
 
-        $this->redirect('/levels', 'تم حذف المستوى بنجاح ✓');
+        $this->redirect('/levels', 'تم حذف الفرقة بنجاح ✓');
     }
 }

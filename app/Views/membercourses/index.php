@@ -18,21 +18,40 @@ $__breadcrumb = [['label' => 'تكليفات التدريس']];
     <div class="card-body table-responsive p-0">
         <table class="table table-hover table-striped data-table">
             <thead>
-                <tr><th>#</th><th>عضو هيئة التدريس</th><th>المقرر</th><th>المجموعة</th><th>النوع</th><th>القسم</th><th>المستوى</th><th>إجراءات</th></tr>
+                <tr><th>#</th><th>عضو هيئة التدريس</th><th>المقرر</th><th>نوع التكليف</th><th>الشعبة/السكشن</th><th>القسم</th><th>المستوى</th><th>إجراءات</th></tr>
             </thead>
             <tbody>
                 <?php foreach ($courses as $i => $c): ?>
                 <tr>
                     <td><?= $i + 1 ?></td>
                     <td><?= e($c['member_name']) ?></td>
-                    <td><?= e($c['subject_name']) ?></td>
                     <td>
-                        <?= e($c['section_name']) ?>
-                        <?php if (($c['section_type'] ?? 'شعبة') === 'سكشن' && !empty($c['parent_section_name'])): ?>
-                            <br><small class="text-muted">تابع لـ <?= e($c['parent_section_name']) ?></small>
+                        <?= e($c['subject_name']) ?>
+                        <?php if (!empty($c['subject_type'])): ?>
+                        <small class="text-muted">(<?= e($c['subject_type']) ?>)</small>
                         <?php endif; ?>
                     </td>
-                    <td><?= e($c['section_type'] ?? 'شعبة') ?></td>
+                    <td>
+                        <?php 
+                        $assignType = $c['assignment_type'] ?? 'نظري';
+                        $badgeClass = $assignType === 'نظري' ? 'info' : 'warning';
+                        $icon = $assignType === 'نظري' ? 'chalkboard-teacher' : 'flask';
+                        ?>
+                        <span class="badge badge-<?= $badgeClass ?>">
+                            <i class="fas fa-<?= $icon ?> mr-1"></i><?= e($assignType) ?>
+                        </span>
+                    </td>
+                    <td>
+                        <?php if ($assignType === 'نظري' && !empty($c['division_name'])): ?>
+                            <i class="fas fa-users text-info mr-1"></i>
+                            <?= e($c['division_name']) ?>
+                        <?php elseif (!empty($c['section_name'])): ?>
+                            <i class="fas fa-layer-group text-warning mr-1"></i>
+                            <?= e($c['section_name']) ?>
+                        <?php else: ?>
+                            <span class="text-muted">—</span>
+                        <?php endif; ?>
+                    </td>
                     <td><?= e($c['department_name'] ?? '') ?></td>
                     <td><?= e($c['level_name'] ?? '') ?></td>
                     <td>

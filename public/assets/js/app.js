@@ -20,13 +20,27 @@
         },
         dom: '<"row"<"col-sm-6"l><"col-sm-6"f>>rtip',
         pageLength: 15,
+        autoWidth: false,
+        scrollX: true,
     });
 
     // ── Init on DOM Ready ────────────────────────────────────────
     $(function () {
+        if (window.matchMedia('(max-width: 991.98px)').matches) {
+            $('body').addClass('sidebar-collapse').removeClass('sidebar-open');
+        }
+
         // Auto-init DataTables and Select2
         $('.data-table').DataTable();
         $('.select2').select2({ theme: 'bootstrap4', dir: 'rtl' });
+
+        // On mobile, close sidebar after selecting a real navigation link.
+        $(document).on('click', '.nav-sidebar .nav-link', function () {
+            var href = $(this).attr('href') || '';
+            if (window.matchMedia('(max-width: 991.98px)').matches && href !== '#' && href !== '') {
+                $('body').removeClass('sidebar-open').addClass('sidebar-collapse');
+            }
+        });
 
         // SweetAlert delete confirmation
         $(document).on('click', '.btn-delete', function (e) {

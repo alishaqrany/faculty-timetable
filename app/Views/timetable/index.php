@@ -138,7 +138,7 @@ $__breadcrumb = [['label' => 'الجدول الدراسي']];
                                         <div class="<?= $cssClass ?>">
                                             <div class="course-name"><?= e($cell['subject_name']) ?></div>
                                             <div class="course-instructor">أ/ <?= e($cell['member_name']) ?></div>
-                                            <div class="course-room"><?= e($cell['classroom_name']) ?></div>
+                                            <div class="course-room"><?= e($cell['classroom_name']) ?> <small>(<?= e($cell['section_name'] ?? 'محاضرة عامة') ?>)</small></div>
                                         </div>
                                     <?php endforeach; ?>
                                 <?php else: ?>
@@ -160,7 +160,7 @@ $__breadcrumb = [['label' => 'الجدول الدراسي']];
         <div class="card-body table-responsive p-0">
             <table class="table table-hover table-striped data-table">
                 <thead>
-                    <tr><th>#</th><th>المقرر</th><th>العضو</th><th>المجموعة</th><th>النوع</th><th>القاعة</th><th>اليوم</th><th>الفترة</th></tr>
+                    <tr><th>#</th><th>المقرر</th><th>العضو</th><th>الشعبة</th><th>القاعة</th><th>اليوم</th><th>الفترة</th></tr>
                 </thead>
                 <tbody>
                     <?php foreach ($entries as $i => $e): ?>
@@ -169,7 +169,6 @@ $__breadcrumb = [['label' => 'الجدول الدراسي']];
                         <td><?= e($e['subject_name'] ?? '') ?></td>
                         <td><?= e($e['member_name'] ?? '') ?></td>
                         <td><?= e($e['section_name'] ?? '') ?></td>
-                        <td><?= e($e['section_type'] ?? 'شعبة') ?></td>
                         <td><?= e($e['classroom_name'] ?? '') ?></td>
                         <td><?= e($e['day'] ?? '') ?></td>
                         <td><?= e($e['start_time'] ?? '') ?> - <?= e($e['end_time'] ?? '') ?></td>

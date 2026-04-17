@@ -1,17 +1,17 @@
 <?php
 $this->layout('layouts.app');
-$__page_title = 'إضافة مستوى';
-$__breadcrumb = [['label' => 'المستويات', 'url' => '/levels'], ['label' => 'إضافة']];
+$__page_title = 'إضافة فرقة';
+$__breadcrumb = [['label' => 'الفرق', 'url' => '/levels'], ['label' => 'إضافة']];
 ?>
 
 <div class="row"><div class="col-md-8">
     <div class="card card-primary">
-        <div class="card-header"><h3 class="card-title">بيانات المستوى الجديد</h3></div>
+        <div class="card-header"><h3 class="card-title">بيانات الفرقة الجديدة</h3></div>
         <form method="POST" action="<?= url('/levels') ?>">
             <?= csrf_field() ?>
             <div class="card-body">
                 <div class="form-group">
-                    <label>اسم المستوى <span class="text-danger">*</span></label>
+                    <label>اسم الفرقة <span class="text-danger">*</span></label>
                     <input type="text" name="level_name" class="form-control" value="<?= e(old('level_name')) ?>" required>
                 </div>
                 <div class="form-group">

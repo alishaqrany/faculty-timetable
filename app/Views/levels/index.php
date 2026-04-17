@@ -1,16 +1,16 @@
 <?php
 $this->layout('layouts.app');
-$__page_title = 'إدارة المستويات';
-$__breadcrumb = [['label' => 'المستويات']];
+$__page_title = 'إدارة الفرق';
+$__breadcrumb = [['label' => 'الفرق']];
 ?>
 
 <div class="card">
     <div class="card-header">
-        <h3 class="card-title">قائمة المستويات</h3>
+        <h3 class="card-title">قائمة الفرق</h3>
         <?php if (can('levels.create')): ?>
         <div class="card-tools">
             <a href="<?= url('/levels/create') ?>" class="btn btn-primary btn-sm">
-                <i class="fas fa-plus ml-1"></i> إضافة مستوى
+                <i class="fas fa-plus ml-1"></i> إضافة فرقة
             </a>
         </div>
         <?php endif; ?>
@@ -18,7 +18,7 @@ $__breadcrumb = [['label' => 'المستويات']];
     <div class="card-body table-responsive p-0">
         <table class="table table-hover table-striped data-table">
             <thead>
-                <tr><th>#</th><th>اسم المستوى</th><th>الرمز</th><th>الترتيب</th><th>الحالة</th><th>إجراءات</th></tr>
+                <tr><th>#</th><th>اسم الفرقة</th><th>الرمز</th><th>الترتيب</th><th>الحالة</th><th>إجراءات</th></tr>
             </thead>
             <tbody>
                 <?php foreach ($levels as $i => $level): ?>

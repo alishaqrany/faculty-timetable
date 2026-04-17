@@ -4,13 +4,38 @@ $basePath = config('app.base_path', '');
 $current = str_replace($basePath, '', $currentPath);
 $current = '/' . trim($current, '/');
 
-function isActive(string $path, string $current): string {
-    if ($path === '/') return ($current === '/' || $current === '') ? 'active' : '';
-    return str_starts_with($current, $path) ? 'active' : '';
+if (!function_exists('isActive')) {
+    function isActive(string $path, string $current): string {
+        if ($path === '/') return ($current === '/' || $current === '') ? 'active' : '';
+        return str_starts_with($current, $path) ? 'active' : '';
+    }
 }
-function menuOpen(string $path, string $current): string {
-    return str_starts_with($current, $path) ? 'menu-open' : '';
+
+if (!function_exists('menuOpenAny')) {
+    function menuOpenAny(array $paths, string $current): string {
+        foreach ($paths as $path) {
+            if (str_starts_with($current, $path)) {
+                return 'menu-open';
+            }
+        }
+        return '';
+    }
 }
+
+if (!function_exists('activeAny')) {
+    function activeAny(array $paths, string $current): string {
+        foreach ($paths as $path) {
+            if (str_starts_with($current, $path)) {
+                return 'active';
+            }
+        }
+        return '';
+    }
+}
+
+$dataPaths = ['/departments', '/levels', '/classrooms', '/sessions', '/academic-years', '/semesters'];
+$academicPaths = ['/members', '/subjects', '/divisions', '/sections', '/member-courses'];
+$adminPaths = ['/users', '/audit-logs', '/settings', '/notifications'];
 ?>
 <!-- Main Sidebar -->
 <aside class="main-sidebar sidebar-dark-primary elevation-4">
@@ -45,8 +70,8 @@ function menuOpen(string $path, string $current): string {
                 </li>
 
                 <!-- Data Management -->
-                <li class="nav-item has-treeview <?= menuOpen('/departments', $current) . menuOpen('/levels', $current) . menuOpen('/classrooms', $current) . menuOpen('/sessions', $current) . menuOpen('/academic-years', $current) . menuOpen('/semesters', $current) ?>">
-                    <a href="#" class="nav-link">
+                <li class="nav-item has-treeview <?= menuOpenAny($dataPaths, $current) ?>">
+                    <a href="#" class="nav-link <?= activeAny($dataPaths, $current) ?>">
                         <i class="nav-icon fas fa-database"></i>
                         <p>البيانات الأساسية <i class="fas fa-angle-left right"></i></p>
                     </a>
@@ -97,8 +122,8 @@ function menuOpen(string $path, string $current): string {
                 </li>
 
                 <!-- Academic -->
-                <li class="nav-item has-treeview <?= menuOpen('/members', $current) . menuOpen('/subjects', $current) . menuOpen('/sections', $current) . menuOpen('/member-courses', $current) ?>">
-                    <a href="#" class="nav-link">
+                <li class="nav-item has-treeview <?= menuOpenAny($academicPaths, $current) ?>">
+                    <a href="#" class="nav-link <?= activeAny($academicPaths, $current) ?>">
                         <i class="nav-icon fas fa-graduation-cap"></i>
                         <p>الشؤون الأكاديمية <i class="fas fa-angle-left right"></i></p>
                     </a>
@@ -117,10 +142,17 @@ function menuOpen(string $path, string $current): string {
                             </a>
                         </li>
                         <?php endif; ?>
+                        <?php if (can('divisions.view')): ?>
+                        <li class="nav-item">
+                            <a href="<?= url('/divisions') ?>" class="nav-link <?= isActive('/divisions', $current) ?>">
+                                <i class="far fa-circle nav-icon"></i> <p>الشُعب</p>
+                            </a>
+                        </li>
+                        <?php endif; ?>
                         <?php if (can('sections.view')): ?>
                         <li class="nav-item">
                             <a href="<?= url('/sections') ?>" class="nav-link <?= isActive('/sections', $current) ?>">
-                                <i class="far fa-circle nav-icon"></i> <p>الشُعب</p>
+                                <i class="far fa-circle nav-icon"></i> <p>السكاشن</p>
                             </a>
                         </li>
                         <?php endif; ?>
@@ -154,8 +186,8 @@ function menuOpen(string $path, string $current): string {
                 <?php endif; ?>
 
                 <!-- Administration -->
-                <li class="nav-item has-treeview <?= menuOpen('/users', $current) . menuOpen('/audit-logs', $current) . menuOpen('/settings', $current) ?>">
-                    <a href="#" class="nav-link">
+                <li class="nav-item has-treeview <?= menuOpenAny($adminPaths, $current) ?>">
+                    <a href="#" class="nav-link <?= activeAny($adminPaths, $current) ?>">
                         <i class="nav-icon fas fa-cogs"></i>
                         <p>الإدارة <i class="fas fa-angle-left right"></i></p>
                     </a>
@@ -164,6 +196,13 @@ function menuOpen(string $path, string $current): string {
                         <li class="nav-item">
                             <a href="<?= url('/users') ?>" class="nav-link <?= isActive('/users', $current) ?>">
                                 <i class="far fa-circle nav-icon"></i> <p>المستخدمون</p>
+                            </a>
+                        </li>
+                        <?php endif; ?>
+                        <?php if (can('notifications.view')): ?>
+                        <li class="nav-item">
+                            <a href="<?= url('/notifications') ?>" class="nav-link <?= isActive('/notifications', $current) ?>">
+                                <i class="far fa-circle nav-icon"></i> <p>الإشعارات</p>
                             </a>
                         </li>
                         <?php endif; ?>

@@ -25,7 +25,10 @@ $router->group('', ['AuthMiddleware', 'CsrfMiddleware'], function (Router $route
     $router->resource('/levels', 'LevelController');
     $router->resource('/members', 'MemberController');
     $router->resource('/subjects', 'SubjectController');
+    $router->resource('/divisions', 'DivisionController');
+    $router->get('/api/divisions/by-dept-level', 'DivisionController@byDepartmentLevel');
     $router->resource('/sections', 'SectionController');
+    $router->get('/api/sections/by-division', 'SectionController@byDivision');
     $router->resource('/classrooms', 'ClassroomController');
     $router->resource('/sessions', 'SessionController');
     $router->post('/sessions/generate', 'SessionController@generate');
@@ -60,6 +63,7 @@ $router->group('', ['AuthMiddleware', 'CsrfMiddleware'], function (Router $route
 
     // Notifications
     $router->get('/notifications', 'NotificationController@index');
+    $router->post('/notifications/send', 'NotificationController@send');
     $router->post('/notifications/{id}/read', 'NotificationController@markRead');
     $router->post('/notifications/read-all', 'NotificationController@markAllRead');
     $router->post('/notifications/{id}/delete', 'NotificationController@destroy');

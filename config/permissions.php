@@ -33,11 +33,17 @@ return [
     'subjects.edit'          => 'تعديل مقرر',
     'subjects.delete'        => 'حذف مقرر',
 
-    // Sections
-    'sections.view'          => 'عرض الشعب',
-    'sections.create'        => 'إنشاء شعبة',
-    'sections.edit'          => 'تعديل شعبة',
-    'sections.delete'        => 'حذف شعبة',
+    // Sections (السكاشن العملية)
+    'sections.view'          => 'عرض السكاشن',
+    'sections.create'        => 'إنشاء سكشن',
+    'sections.edit'          => 'تعديل سكشن',
+    'sections.delete'        => 'حذف سكشن',
+
+    // Divisions (الشُعب)
+    'divisions.view'         => 'عرض الشُعب',
+    'divisions.create'       => 'إنشاء شعبة',
+    'divisions.edit'         => 'تعديل شعبة',
+    'divisions.delete'       => 'حذف شعبة',
 
     // Classrooms
     'classrooms.view'        => 'عرض القاعات',
@@ -87,6 +93,7 @@ return [
 
     // Notifications
     'notifications.view'     => 'عرض الإشعارات',
+    'notifications.send'      => 'إرسال الإشعارات',
 
     // API
     'api.access'             => 'الوصول إلى واجهة API',

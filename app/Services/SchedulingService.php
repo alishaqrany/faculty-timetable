@@ -16,12 +16,11 @@ class SchedulingService
         $db = \Database::getInstance();
         $conflicts = [];
 
-        // Get member_course details
+        // Get member_course details (use LEFT JOIN since section might be null for theory courses)
         $mc = $db->fetch(
-            "SELECT mc.*, s.department_id, s.level_id, sec.section_id, sec.parent_section_id, mc.member_id
+            "SELECT mc.*, s.department_id, s.level_id
              FROM member_courses mc
              JOIN subjects s ON mc.subject_id = s.subject_id
-             JOIN sections sec ON mc.section_id = sec.section_id
              WHERE mc.member_course_id = ?",
             [$memberCourseId]
         );
@@ -49,31 +48,88 @@ class SchedulingService
             $conflicts[] = "القاعة \"{$classroomConflict['classroom_name']}\" محجوزة في {$classroomConflict['day']} - {$classroomConflict['session_name']}";
         }
 
-        // 2. Section/Hierarchy conflict: same section, parent section, or child section at same session
-        $params = array_merge([$sessionId], $baseParams);
+        // 2. Division / Section overlap conflict (Student schedule conflicts)
+        $myDivisions = [];
+        $mySections = [];
+
+        if ($mc['assignment_type'] === 'نظري') {
+            if ($mc['is_shared']) {
+                $shared = $db->fetchAll("SELECT division_id FROM member_course_shared_divisions WHERE member_course_id = ?", [$memberCourseId]);
+                $myDivisions = array_column($shared, 'division_id');
+            } elseif ($mc['division_id']) {
+                $myDivisions[] = $mc['division_id'];
+            }
+        } elseif ($mc['assignment_type'] === 'عملي' && $mc['section_id']) {
+            $secId = $mc['section_id'];
+            $mySections[] = $secId;
+            $secDb = $db->fetch("SELECT parent_section_id FROM sections WHERE section_id = ?", [$secId]);
+            if ($secDb && $secDb['parent_section_id']) {
+                $mySections[] = $secDb['parent_section_id'];
+            }
+            $kids = $db->fetchAll("SELECT section_id FROM sections WHERE parent_section_id = ?", [$secId]);
+            foreach ($kids as $k) {
+                $mySections[] = $k['section_id'];
+            }
+        }
         
-        $sectionConflict = $db->fetch(
-            "SELECT t.*, sec.section_name, sess.session_name, sess.day
+        // Inherit sections from divisions
+        if (!empty($myDivisions)) {
+            $divPlaceholders = implode(',', array_fill(0, count($myDivisions), '?'));
+            $divSecs = $db->fetchAll("SELECT section_id FROM sections WHERE division_id IN ($divPlaceholders)", $myDivisions);
+            foreach ($divSecs as $ds) {
+                if (!in_array($ds['section_id'], $mySections)) {
+                    $mySections[] = $ds['section_id'];
+                }
+            }
+        }
+
+        // Now see if existing classes overlap
+        $sessParams = array_merge([$sessionId], $baseParams);
+        $overlapSQL = "SELECT t.*, sess.session_name, sess.day, mc2.subject_id, s2.subject_name, mc2.assignment_type, mc2.member_course_id AS mc2_id
              FROM timetable t
              JOIN member_courses mc2 ON t.member_course_id = mc2.member_course_id
-             JOIN sections sec ON mc2.section_id = sec.section_id
+             JOIN subjects s2 ON mc2.subject_id = s2.subject_id
              JOIN sessions sess ON t.session_id = sess.session_id
-             WHERE t.session_id = ? $excludeClause
-               AND (
-                   sec.section_id = ? 
-                   OR sec.parent_section_id = ? 
-                   OR (? IS NOT NULL AND sec.section_id = ?)
-               )
-             LIMIT 1",
-            array_merge($params, [
-                $mc['section_id'],
-                $mc['section_id'],
-                $mc['parent_section_id'],
-                $mc['parent_section_id']
-            ])
-        );
-        if ($sectionConflict) {
-            $conflicts[] = "يوجد تعارض مع شعبة/سكشن مرتبط: \"{$sectionConflict['section_name']}\" لديها حصة في نفس الفترة ({$sectionConflict['day']} - {$sectionConflict['session_name']})";
+             WHERE t.session_id = ? $excludeClause";
+
+        $overlappingClasses = $db->fetchAll($overlapSQL, $sessParams);
+        
+        foreach ($overlappingClasses as $ex) {
+            $exDivs = [];
+            $exSecs = [];
+            $exM = $db->fetch("SELECT is_shared, division_id, section_id FROM member_courses WHERE member_course_id = ?", [$ex['mc2_id']]);
+            
+            if ($ex['assignment_type'] === 'نظري') {
+                if ($exM['is_shared']) {
+                    $sh = $db->fetchAll("SELECT division_id FROM member_course_shared_divisions WHERE member_course_id = ?", [$ex['mc2_id']]);
+                    $exDivs = array_column($sh, 'division_id');
+                } elseif ($exM['division_id']) {
+                    $exDivs[] = $exM['division_id'];
+                }
+                
+                if (!empty($exDivs)) {
+                    $ph = implode(',', array_fill(0, count($exDivs), '?'));
+                    $secRows = $db->fetchAll("SELECT section_id FROM sections WHERE division_id IN ($ph)", $exDivs);
+                    $exSecs = array_column($secRows, 'section_id');
+                }
+            } else {
+                if ($exM['section_id']) {
+                    $exSecId = $exM['section_id'];
+                    $exSecs[] = $exSecId;
+                    $pp = $db->fetch("SELECT parent_section_id FROM sections WHERE section_id = ?", [$exSecId]);
+                    if ($pp && $pp['parent_section_id']) $exSecs[] = $pp['parent_section_id'];
+                    $cc = $db->fetchAll("SELECT section_id FROM sections WHERE parent_section_id = ?", [$exSecId]);
+                    foreach ($cc as $kid) $exSecs[] = $kid['section_id'];
+                }
+            }
+            
+            $intersectDivs = array_intersect($myDivisions, $exDivs);
+            $intersectSecs = array_intersect($mySections, $exSecs);
+            
+            if (!empty($intersectDivs) || !empty($intersectSecs)) {
+                $conflicts[] = "يوجد تعارض مع مجموعة طلابية: لديهم مادة \"{$ex['subject_name']}\" في نفس الفترة ({$ex['day']} - {$ex['session_name']})";
+                break;
+            }
         }
 
         // 3. Faculty conflict: same member at same session
