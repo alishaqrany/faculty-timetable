@@ -1,5 +1,7 @@
 <?php
 require_once("../db_config.php");
+require_once("../core/csrf.php");
+require_once("../core/flash.php");
 
 // التحقق من تسجيل الدخول
 session_start();
@@ -15,29 +17,34 @@ $message_type = "";
 $username = "";
 $password = "";
 
-// جلب الرسالة من الجلسة، إذا كانت موجودة
-$message = isset($_SESSION['message']) ? $_SESSION['message'] : "";
-$message_type = isset($_SESSION['message_type']) ? $_SESSION['message_type'] : "";
+list($message, $message_type) = flash_consume();
 
-// مسح الرسالة من الجلسة بعد عرضها
-unset($_SESSION['message']);
-unset($_SESSION['message_type']);
+if (isset($_SESSION['generated_username'], $_SESSION['generated_password'])) {
+    $username = (string)$_SESSION['generated_username'];
+    $password = (string)$_SESSION['generated_password'];
+    unset($_SESSION['generated_username'], $_SESSION['generated_password']);
+}
 
 // التحقق من إرسال النموذج وإدخال البيانات في قاعدة البيانات
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $member_name = mysqli_real_escape_string($conn, $_POST['member_name']);
-    $academic_degree = mysqli_real_escape_string($conn, $_POST['academic_degree']);
-    $join_date = mysqli_real_escape_string($conn, $_POST['join_date']);
-    $ranking = mysqli_real_escape_string($conn, $_POST['ranking']);
-    $role = mysqli_real_escape_string($conn, $_POST['role']);
+    $member_name = trim($_POST['member_name']);
+    $academic_degree = trim($_POST['academic_degree']);
+    $join_date = trim($_POST['join_date']);
+    $ranking = trim((string)$_POST['ranking']);
+    $role = trim($_POST['role']);
 
-    // إجراء استعلام INSERT لإدخال البيانات في جدول faculty_members
-    $insertQuery = "
-    INSERT INTO faculty_members (member_name, academic_degree, join_date, ranking, role)
-    VALUES ('$member_name', '$academic_degree', '$join_date', '$ranking', '$role')
-    ";
-
-    $insertResult = mysqli_query($conn, $insertQuery);
+    if ($member_name === '' || $academic_degree === '' || $role === '' || ($ranking !== '' && !ctype_digit($ranking))) {
+        $insertResult = false;
+        $insertStmt = null;
+    } else {
+        $rankingValue = ($ranking === '') ? null : (int)$ranking;
+        $insertQuery = "INSERT INTO faculty_members (member_name, academic_degree, join_date, ranking, role) VALUES (?, ?, ?, ?, ?)";
+        $insertStmt = mysqli_prepare($conn, $insertQuery);
+        if ($insertStmt) {
+            mysqli_stmt_bind_param($insertStmt, "sssis", $member_name, $academic_degree, $join_date, $rankingValue, $role);
+        }
+        $insertResult = $insertStmt && mysqli_stmt_execute($insertStmt);
+    }
 
     // بعد عملية الإدخال في جدول faculty_members
     if ($insertResult) {
@@ -51,23 +58,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $hashed_password = password_hash($password, PASSWORD_DEFAULT);
 
         // إدخال بيانات المستخدم في جدول users
-        $insertUserQuery = "
-        INSERT INTO users (username, password, member_id)
-        VALUES ('$username', '$hashed_password', LAST_INSERT_ID())
-        ";
+        $newMemberId = mysqli_insert_id($conn);
+        $insertUserQuery = "INSERT INTO users (username, password, member_id) VALUES (?, ?, ?)";
+        $insertUserStmt = mysqli_prepare($conn, $insertUserQuery);
+        if ($insertUserStmt) {
+            mysqli_stmt_bind_param($insertUserStmt, "ssi", $username, $hashed_password, $newMemberId);
+        }
 
-        $insertUserResult = mysqli_query($conn, $insertUserQuery);
+        $insertUserResult = $insertUserStmt && mysqli_stmt_execute($insertUserStmt);
 
         if ($insertUserResult) {
-            $message = "تم إدخال البيانات وإنشاء حساب المستخدم بنجاح!";
-            $message_type = "success";
+            $_SESSION['generated_username'] = $username;
+            $_SESSION['generated_password'] = $password;
+            flash_redirect('faculty_members.php', 'تم إدخال البيانات وإنشاء حساب المستخدم بنجاح!', 'success');
         } else {
-            $message = "حدث خطأ أثناء إنشاء حساب المستخدم: " . mysqli_error($conn);
-            $message_type = "error";
+            if ($insertUserStmt) {
+                error_log("Create user for member failed: " . mysqli_stmt_error($insertUserStmt));
+            } else {
+                error_log("Create user for member prepare failed: " . mysqli_error($conn));
+            }
+            flash_redirect('faculty_members.php', 'حدث خطأ أثناء إنشاء حساب المستخدم.', 'error');
+        }
+
+        if ($insertUserStmt) {
+            mysqli_stmt_close($insertUserStmt);
         }
     } else {
-        $message = "حدث خطأ أثناء إدخال البيانات: " . mysqli_error($conn);
-        $message_type = "error";
+        if (isset($insertStmt) && $insertStmt) {
+            error_log("Insert faculty member failed: " . mysqli_stmt_error($insertStmt));
+        } else {
+            error_log("Insert faculty member prepare failed: " . mysqli_error($conn));
+        }
+        flash_redirect('faculty_members.php', 'حدث خطأ أثناء إدخال البيانات.', 'error');
+    }
+
+    if (isset($insertStmt) && $insertStmt) {
+        mysqli_stmt_close($insertStmt);
     }
 }
 
@@ -161,6 +187,7 @@ $degreesResult = mysqli_query($conn, $degreesQuery);
                 $result = mysqli_query($conn, $selectQuery);
 
                 if (mysqli_num_rows($result) > 0) {
+                    $csrfToken = htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8');
                     while ($row = mysqli_fetch_assoc($result)) {
                         echo "<tr>";
                         echo "<td>" . $row['member_id'] . "</td>";
@@ -170,7 +197,7 @@ $degreesResult = mysqli_query($conn, $degreesQuery);
                         echo "<td>" . $row['join_date'] . "</td>";
                         echo "<td>" . $row['ranking'] . "</td>";
                         echo "<td>" . $row['role'] . "</td>";
-                        echo "<td><a href='edit_member.php?id=" . $row['member_id'] . "' class='btn btn-warning'>تعديل</a> <a href='delete_member.php?id=" . $row['member_id'] . "' class='btn btn-danger' onclick='return confirm(\"هل أنت متأكد من حذف هذا العضو؟\")'>حذف</a></td>";
+                        echo "<td><a href='edit_member.php?id=" . $row['member_id'] . "' class='btn btn-warning'>تعديل</a> <form method='POST' action='delete_member.php' style='display:inline;' onsubmit='return confirm(\"هل أنت متأكد من حذف هذا العضو؟\")'><input type='hidden' name='csrf_token' value='{$csrfToken}'><input type='hidden' name='id' value='" . $row['member_id'] . "'><button type='submit' class='btn btn-danger'>حذف</button></form></td>";
                         echo "</tr>";
                     }
                 } else {

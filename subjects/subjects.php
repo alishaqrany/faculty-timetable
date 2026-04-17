@@ -1,5 +1,7 @@
 <?php
 require_once("../db_config.php");
+require_once("../core/csrf.php");
+require_once("../core/flash.php");
 
 // التحقق من تسجيل الدخول
 session_start();
@@ -10,48 +12,56 @@ if (!isset($_SESSION['member_id'])) {
     exit();
 }
 
-$message = "";
-$message_type = "";
-
-if (isset($_SESSION['message'])) {
-    $message = $_SESSION['message'];
-    $message_type = isset($_SESSION['message_type']) ? $_SESSION['message_type'] : "";
-    unset($_SESSION['message'], $_SESSION['message_type']);
-}
+list($message, $message_type) = flash_consume();
 
 $tableName = "subjects";
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['add'])) {
         // إضافة المادة
-        $subject_name = mysqli_real_escape_string($conn, $_POST['subject_name']);
-        $department_id = mysqli_real_escape_string($conn, $_POST['department_id']);
-        $level_id = mysqli_real_escape_string($conn, $_POST['level_id']);
-        $hours = mysqli_real_escape_string($conn, $_POST['hours']);
+        $subject_name = trim($_POST['subject_name']);
+        $department_id = $_POST['department_id'];
+        $level_id = $_POST['level_id'];
+        $hours = $_POST['hours'];
 
-        $insertQuery = "
-        INSERT INTO $tableName (subject_name, department_id, level_id, hours)
-        VALUES ('$subject_name', $department_id, $level_id, $hours)
-        ";
-        
-        $insertResult = mysqli_query($conn, $insertQuery);
-        if ($insertResult) {
-            $message = "تمت إضافة المادة بنجاح!";
-            $message_type = "success";
+        if ($subject_name === '' || !ctype_digit((string)$department_id) || !ctype_digit((string)$level_id) || !ctype_digit((string)$hours)) {
+            $insertResult = false;
+            $insertStmt = null;
         } else {
-            $message = "حدث خطأ أثناء إضافة المادة: " . mysqli_error($conn);
-            $message_type = "error";
+            $department_id = (int)$department_id;
+            $level_id = (int)$level_id;
+            $hours = (int)$hours;
+            $insertQuery = "INSERT INTO $tableName (subject_name, department_id, level_id, hours) VALUES (?, ?, ?, ?)";
+            $insertStmt = mysqli_prepare($conn, $insertQuery);
+            if ($insertStmt) {
+                mysqli_stmt_bind_param($insertStmt, "siii", $subject_name, $department_id, $level_id, $hours);
+            }
+            $insertResult = $insertStmt && mysqli_stmt_execute($insertStmt);
+        }
+
+        if ($insertResult) {
+            flash_redirect('subjects.php', 'تمت إضافة المادة بنجاح!', 'success');
+        } else {
+            if (isset($insertStmt) && $insertStmt) {
+                error_log("Insert subject failed: " . mysqli_stmt_error($insertStmt));
+            } else {
+                error_log("Insert subject prepare failed: " . mysqli_error($conn));
+            }
+            flash_redirect('subjects.php', 'حدث خطأ أثناء إضافة المادة.', 'error');
+        }
+
+        if (isset($insertStmt) && $insertStmt) {
+            mysqli_stmt_close($insertStmt);
         }
     } elseif (isset($_POST['delete'])) {
         // حذف الجدول بالكامل
         $deleteQuery = "DROP TABLE $tableName";
         $deleteResult = mysqli_query($conn, $deleteQuery);
         if ($deleteResult) {
-            $message = "تم حذف الجدول بنجاح!";
-            $message_type = "success";
+            flash_redirect('subjects.php', 'تم حذف الجدول بنجاح!', 'success');
         } else {
-            $message = "حدث خطأ أثناء حذف الجدول: " . mysqli_error($conn);
-            $message_type = "error";
+            error_log("Drop subjects table failed: " . mysqli_error($conn));
+            flash_redirect('subjects.php', 'حدث خطأ أثناء حذف الجدول.', 'error');
         }
     }
 }
@@ -189,6 +199,7 @@ include dirname(__FILE__) . '/navbar.php';
 
                 $selectResult = mysqli_query($conn, $selectQuery);
                 if ($selectResult) {
+                    $csrfToken = htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8');
                     while ($row = mysqli_fetch_assoc($selectResult)) {
                         echo "<tr>";
                         echo "<td>{$row['subject_id']}</td>";
@@ -199,11 +210,12 @@ include dirname(__FILE__) . '/navbar.php';
                         echo "<td>{$row['level_name']}</td>";
                         echo "<td>{$row['hours']}</td>";
                         echo "<td><a href='edit_subject.php?subject_id={$row['subject_id']}'>تعديل</a></td>";
-                        echo "<td><a href='delete_subject.php?subject_id={$row['subject_id']}'>حذف</a></td>";
+                        echo "<td><form method='POST' action='delete_subject.php' style='display:inline;' onsubmit='return confirm(\"هل أنت متأكد من حذف هذه المادة؟\")'><input type='hidden' name='csrf_token' value='{$csrfToken}'><input type='hidden' name='subject_id' value='{$row['subject_id']}'><button type='submit'>حذف</button></form></td>";
                         echo "</tr>";
                     }
                 } else {
-                    echo "<tr><td colspan='9'>حدث خطأ أثناء استعلام قاعدة البيانات: " . mysqli_error($conn) . "</td></tr>";
+                    error_log("Select subjects table failed: " . mysqli_error($conn));
+                    echo "<tr><td colspan='9'>حدث خطأ أثناء استعلام قاعدة البيانات.</td></tr>";
                 }
             } else {
                 // الجدول غير موجود

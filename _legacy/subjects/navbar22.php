@@ -1,3 +1,7 @@
+<?php
+include __DIR__ . '/../../subjects/navbar.php';
+return;
+?>
 <!-- navbar.php -->
 <div class="navbar">
     <a class="logo" href="../"> الرئيسية</a>

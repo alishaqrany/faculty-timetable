@@ -1,5 +1,7 @@
 <?php
 require_once("../db_config.php");
+require_once("../core/csrf.php");
+require_once("../core/flash.php");
 
 // التحقق من تسجيل الدخول
 session_start();
@@ -10,17 +12,7 @@ if (!isset($_SESSION['member_id'])) {
     exit();
 }
 
-$message = "";
-$message_type = "";
-
-
-// جلب الرسالة من الجلسة، إذا كانت موجودة
-$message = isset($_SESSION['message']) ? $_SESSION['message'] : "";
-$message_type = isset($_SESSION['message_type']) ? $_SESSION['message_type'] : "";
-
-// مسح الرسالة من الجلسة بعد عرضها
-unset($_SESSION['message']);
-unset($_SESSION['message_type']);
+list($message, $message_type) = flash_consume();
 
 
 // التحقق من إرسال النموذج وحفظ البيانات إذا تم الإرسال
@@ -29,18 +21,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $subject_id = $_POST['subject_id'];
     $section_id = $_POST['section_id'];
 
-    // إدخال البيانات في جدول الاختيارات
-    $insertQuery = "
-    INSERT INTO member_courses (member_id, subject_id, section_id)
-    VALUES ('$member_id', '$subject_id', '$section_id')
-    ";
-
-    if ($conn->query($insertQuery) === TRUE) {
-        $message = "تم حفظ الاختيارات بنجاح!";
-        $message_type = "success";
+    if (!ctype_digit((string)$member_id) || !ctype_digit((string)$subject_id) || !ctype_digit((string)$section_id)) {
+        flash_redirect('membercourses.php', 'حدث خطأ أثناء حفظ الاختيارات: بيانات غير صالحة.', 'error');
     } else {
-        $message = "حدث خطأ أثناء حفظ الاختيارات: " . $conn->error;
-        $message_type = "error";
+        $member_id = (int)$member_id;
+        $subject_id = (int)$subject_id;
+        $section_id = (int)$section_id;
+
+        $insertQuery = "INSERT INTO member_courses (member_id, subject_id, section_id) VALUES (?, ?, ?)";
+        $insertStmt = $conn->prepare($insertQuery);
+        if ($insertStmt) {
+            $insertStmt->bind_param("iii", $member_id, $subject_id, $section_id);
+        }
+
+        if ($insertStmt && $insertStmt->execute()) {
+            flash_redirect('membercourses.php', 'تم حفظ الاختيارات بنجاح!', 'success');
+        } else {
+            if ($insertStmt) {
+                error_log("Insert member course failed: " . $insertStmt->error);
+            } else {
+                error_log("Insert member course prepare failed: " . $conn->error);
+            }
+            flash_redirect('membercourses.php', 'حدث خطأ أثناء حفظ الاختيارات.', 'error');
+        }
+
+        if ($insertStmt) {
+            $insertStmt->close();
+        }
     }
 }
 
@@ -178,6 +185,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $recordsResult = $conn->query($recordsQuery);
 
             if ($recordsResult->num_rows > 0) {
+                $csrfToken = htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8');
                 while ($row = $recordsResult->fetch_assoc()) {
                     echo "<tr>";
                     echo "<td>" . $row['member_name'] . "</td>";
@@ -185,7 +193,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     echo "<td>" . $row['section_name'] . "</td>";
                     echo "<td>
                             <a href='edit_record.php?id=" . $row['member_course_id'] . "' class='btn btn-warning'>تعديل</a>
-                            <a href='delete_record.php?id=" . $row['member_course_id'] . "' class='btn btn-danger' onclick='return confirm(\"هل أنت متأكد أنك تريد الحذف؟\");'>حذف</a>
+                            <form method='POST' action='delete_record.php' style='display:inline;' onsubmit='return confirm(\"هل أنت متأكد أنك تريد الحذف؟\");'>
+                                <input type='hidden' name='csrf_token' value='{$csrfToken}'>
+                                <input type='hidden' name='id' value='" . $row['member_course_id'] . "'>
+                                <button type='submit' class='btn btn-danger'>حذف</button>
+                            </form>
                           </td>";
                     echo "</tr>";
                 }

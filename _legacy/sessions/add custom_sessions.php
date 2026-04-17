@@ -1,13 +1,6 @@
 <?php
-require_once("../db_config.php");
-session_start();
-
-if (!isset($_SESSION['member_id'])) {
-    header("Location: ../login.php");
-    exit();
-}
-
-$tableName = "sessions";
+header("Location: ../../sessions/sessions.php", true, 302);
+exit();
 
 $createTableQuery = "
 CREATE TABLE IF NOT EXISTS $tableName (

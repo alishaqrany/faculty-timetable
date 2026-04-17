@@ -9,44 +9,79 @@ if (!isset($_SESSION['member_id'])) {
 }
 
 // التحقق من وجود معرف الفرقة الدراسية في العنوان
-if (!isset($_GET['id'])) {
+if (!isset($_GET['id']) || !ctype_digit($_GET['id'])) {
+    $_SESSION['message'] = "تعذر فتح صفحة التعديل: معرف غير صالح.";
+    $_SESSION['message_type'] = "error";
     header("Location: levels.php");
     exit();
 }
 
-$level_id = $_GET['id'];
+$level_id = (int)$_GET['id'];
 
 // جلب بيانات الفرقة الدراسية من قاعدة البيانات
-$query = "SELECT * FROM levels WHERE level_id = '$level_id'";
-$result = mysqli_query($conn, $query);
+$query = "SELECT level_name FROM levels WHERE level_id = ?";
+$stmt = mysqli_prepare($conn, $query);
 
-if (mysqli_num_rows($result) == 1) {
+if ($stmt) {
+    mysqli_stmt_bind_param($stmt, "i", $level_id);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+} else {
+    $result = false;
+}
+
+if ($result && mysqli_num_rows($result) == 1) {
     $row = mysqli_fetch_assoc($result);
     $level_name = $row['level_name'];
 } else {
+    if ($stmt) {
+        error_log("Edit level load failed: " . mysqli_stmt_error($stmt));
+    } else {
+        error_log("Edit level prepare failed: " . mysqli_error($conn));
+    }
+    $_SESSION['message'] = "تعذر تحميل بيانات الفرقة الدراسية.";
+    $_SESSION['message_type'] = "error";
     header("Location: levels.php");
     exit();
+}
+
+if ($stmt) {
+    mysqli_stmt_close($stmt);
 }
 
 // التحقق من إرسال النموذج وتحديث البيانات في قاعدة البيانات
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $level_name = mysqli_real_escape_string($conn, $_POST['level_name']);
+    $level_name = trim($_POST['level_name']);
 
-    // تحديث بيانات الفرقة الدراسية
-    $updateQuery = "
-    UPDATE levels SET
-    level_name = '$level_name'
-    WHERE level_id = '$level_id'
-    ";
+    if ($level_name === '') {
+        $_SESSION['message'] = "اسم الفرقة الدراسية مطلوب.";
+        $_SESSION['message_type'] = "error";
+        header("Location: levels.php");
+        exit();
+    }
 
-    $updateResult = mysqli_query($conn, $updateQuery);
+    $updateQuery = "UPDATE levels SET level_name = ? WHERE level_id = ?";
+    $updateStmt = mysqli_prepare($conn, $updateQuery);
 
-    if ($updateResult) {
+    if ($updateStmt) {
+        mysqli_stmt_bind_param($updateStmt, "si", $level_name, $level_id);
+    }
+
+    if ($updateStmt && mysqli_stmt_execute($updateStmt)) {
         $_SESSION['message'] = "تم تحديث بيانات الفرقة الدراسية بنجاح!";
         $_SESSION['message_type'] = "success";
     } else {
-        $_SESSION['message'] = "حدث خطأ أثناء تحديث بيانات الفرقة الدراسية: " . mysqli_error($conn);
+        if ($updateStmt) {
+            error_log("Edit level update failed: " . mysqli_stmt_error($updateStmt));
+        } else {
+            error_log("Edit level update prepare failed: " . mysqli_error($conn));
+        }
+        $_SESSION['message'] = "حدث خطأ أثناء تحديث بيانات الفرقة الدراسية.";
         $_SESSION['message_type'] = "error";
+    }
+
+    if ($updateStmt) {
+        mysqli_stmt_close($updateStmt);
     }
 
     header("Location: levels.php");

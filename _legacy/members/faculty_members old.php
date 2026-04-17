@@ -1,5 +1,6 @@
 <?php
-require_once("../db_config.php");
+header("Location: ../../members/faculty_members.php", true, 302);
+exit();
 
 // التحقق من تسجيل الدخول
 session_start();

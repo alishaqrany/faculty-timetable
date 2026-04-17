@@ -1,13 +1,10 @@
 <?php
-require_once("../db_config.php");
-session_start();
-
-if (!isset($_SESSION['member_id'])) {
-    header("Location: ../login.php");
-    exit();
+$target = "../../subjects/edit_subject.php";
+if (isset($_GET['subject_id'])) {
+    $target .= "?subject_id=" . urlencode($_GET['subject_id']);
 }
-
-$tableName = "subjects";
+header("Location: " . $target, true, 302);
+exit();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['edit'])) {

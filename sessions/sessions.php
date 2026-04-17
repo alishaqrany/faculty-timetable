@@ -1,5 +1,6 @@
 <?php
 require_once("../db_config.php");
+require_once("../core/flash.php");
 
 // التحقق من تسجيل الدخول
 session_start();
@@ -21,9 +22,12 @@ $sessions = array(
     array("session_name" => "4:6", "start_time" => "16:00", "end_time" => "18:00", "duration" => 2)
 );
 
+list($message, $message_type) = flash_consume();
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['add'])) {
         // إضافة الفترات
+        $insertFailed = false;
 
         // Loop through the days and sessions and save the time slots in the database
 $days = ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس"];
@@ -34,25 +38,38 @@ foreach ($days as $day) {
         $end_time = $session["end_time"];
         $duration = $session["duration"];
 
-        $insertQuery = "
-        INSERT INTO sessions (day, session_name, start_time, end_time, duration)
-        VALUES ('$day', '$session_name', '$start_time', '$end_time', '$duration')
-        ";
-        $insertResult = mysqli_query($conn, $insertQuery);
+        $insertQuery = "INSERT INTO sessions (day, session_name, start_time, end_time, duration) VALUES (?, ?, ?, ?, ?)";
+        $insertStmt = mysqli_prepare($conn, $insertQuery);
+        if ($insertStmt) {
+            mysqli_stmt_bind_param($insertStmt, "ssssi", $day, $session_name, $start_time, $end_time, $duration);
+            $insertResult = mysqli_stmt_execute($insertStmt);
+            mysqli_stmt_close($insertStmt);
+        } else {
+            $insertResult = false;
+        }
+
         if (!$insertResult) {
-            echo "<p>حدث خطأ أثناء حفظ الفترة: " . mysqli_error($conn) . "</p>";
+            error_log("Insert session failed: " . mysqli_error($conn));
+            $insertFailed = true;
         }
     }
 }
+
+        if ($insertFailed) {
+            flash_redirect('sessions.php', 'حدث خطأ أثناء حفظ بعض الفترات.', 'error');
+        }
+
+        flash_redirect('sessions.php', 'تمت إضافة الفترات بنجاح!', 'success');
 
     } elseif (isset($_POST['delete'])) {
         // حذف الجدول بالكامل
         $deleteQuery = "DROP TABLE $tableName";
         $deleteResult = mysqli_query($conn, $deleteQuery);
         if ($deleteResult) {
-            echo "<p>تم حذف الجدول بنجاح!</p>";
+            flash_redirect('sessions.php', 'تم حذف الجدول بنجاح!', 'success');
         } else {
-            echo "<p>حدث خطأ أثناء حذف الجدول: " . mysqli_error($conn) . "</p>";
+            error_log("Drop sessions table failed: " . mysqli_error($conn));
+            flash_redirect('sessions.php', 'حدث خطأ أثناء حذف الجدول.', 'error');
         }
     }
 }
@@ -62,6 +79,50 @@ foreach ($days as $day) {
 <html>
 <head>
     <title>نموذج البيانات</title>
+    <meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+    <style>
+        .alert {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            padding: 20px;
+            background-color: #4CAF50;
+            color: white;
+            opacity: 1;
+            transition: opacity 0.6s;
+            border-radius: 5px;
+            z-index: 1000;
+        }
+
+        .alert.error {
+            background-color: #f44336;
+        }
+    </style>
+    <script>
+        function showAlert(message, type) {
+            const alertBox = document.createElement('div');
+            alertBox.className = 'alert';
+            if (type === 'error') {
+                alertBox.classList.add('error');
+            }
+            alertBox.textContent = message;
+
+            document.body.appendChild(alertBox);
+
+            setTimeout(() => {
+                alertBox.style.opacity = '0';
+                setTimeout(() => {
+                    alertBox.remove();
+                }, 600);
+            }, 3000);
+        }
+
+        <?php if ($message): ?>
+        window.onload = function() {
+            showAlert("<?php echo $message; ?>", "<?php echo $message_type; ?>");
+        }
+        <?php endif; ?>
+    </script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -156,7 +217,8 @@ foreach ($days as $day) {
                             echo "</tr>";
                         }
                     } else {
-                        echo "<p>حدث خطأ أثناء استعلام قاعدة البيانات: " . mysqli_error($conn) . "</p>";
+                        error_log("Select sessions failed: " . mysqli_error($conn));
+                        echo "<p>حدث خطأ أثناء استعلام قاعدة البيانات.</p>";
                     }
                 } else {
                     // الجدول غير موجود

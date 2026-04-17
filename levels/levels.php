@@ -1,5 +1,7 @@
 <?php
 require_once("../db_config.php");
+require_once("../core/csrf.php");
+require_once("../core/flash.php");
 
 // التحقق من تسجيل الدخول
 session_start();
@@ -10,37 +12,39 @@ if (!isset($_SESSION['member_id'])) {
     exit();
 }
 
-$message = "";
-$message_type = "";
-
-// جلب الرسالة من الجلسة، إذا كانت موجودة
-$message = isset($_SESSION['message']) ? $_SESSION['message'] : "";
-$message_type = isset($_SESSION['message_type']) ? $_SESSION['message_type'] : "";
-
-// مسح الرسالة من الجلسة بعد عرضها
-unset($_SESSION['message']);
-unset($_SESSION['message_type']);
+list($message, $message_type) = flash_consume();
 
 
 
 // التحقق من إرسال النموذج وإدخال البيانات في قاعدة البيانات
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $level_name = mysqli_real_escape_string($conn, $_POST['level_name']);
+    $level_name = trim($_POST['level_name']);
 
-    // إجراء استعلام INSERT لإدخال البيانات في جدول الفرق الدراسية
-    $insertQuery = "
-    INSERT INTO levels (level_name)
-    VALUES ('$level_name')
-    ";
+    if ($level_name === '') {
+        flash_redirect('levels.php', 'يرجى إدخال اسم الفرقة الدراسية.', 'error');
+    }
 
-    $insertResult = mysqli_query($conn, $insertQuery);
+    $insertQuery = "INSERT INTO levels (level_name) VALUES (?)";
+    $insertStmt = mysqli_prepare($conn, $insertQuery);
+    if ($insertStmt) {
+        mysqli_stmt_bind_param($insertStmt, "s", $level_name);
+    }
+
+    $insertResult = $insertStmt && mysqli_stmt_execute($insertStmt);
 
     if ($insertResult) {
-        $message = "تم إدخال الفرقة الدراسية بنجاح!";
-        $message_type = "success";
+        flash_redirect('levels.php', 'تم إدخال الفرقة الدراسية بنجاح!', 'success');
     } else {
-        $message = "حدث خطأ أثناء إدخال الفرقة الدراسية: " . mysqli_error($conn);
-        $message_type = "error";
+        if ($insertStmt) {
+            error_log("Insert level failed: " . mysqli_stmt_error($insertStmt));
+        } else {
+            error_log("Insert level prepare failed: " . mysqli_error($conn));
+        }
+        flash_redirect('levels.php', 'حدث خطأ أثناء إدخال الفرقة الدراسية.', 'error');
+    }
+
+    if ($insertStmt) {
+        mysqli_stmt_close($insertStmt);
     }
 }
 ?>
@@ -123,13 +127,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $result = mysqli_query($conn, $selectQuery);
 
                 if ($result && mysqli_num_rows($result) > 0) {
+                    $csrfToken = htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8');
                     while ($row = mysqli_fetch_assoc($result)) {
                         echo "<tr>";
                         echo "<td>" . $row['level_id'] . "</td>";
                         echo "<td>" . $row['level_name'] . "</td>";
                         echo "<td>
                                 <a href='edit_level.php?id={$row['level_id']}' class='btn btn-warning'>تعديل</a>
-                                <a href='delete_level.php?id={$row['level_id']}' class='btn btn-danger' onclick='return confirm(\"هل أنت متأكد من حذف هذه الفرقة الدراسية؟\")'>حذف</a>
+                                <form method='POST' action='delete_level.php' style='display:inline;' onsubmit='return confirm(\"هل أنت متأكد من حذف هذه الفرقة الدراسية؟\")'>
+                                    <input type='hidden' name='csrf_token' value='{$csrfToken}'>
+                                    <input type='hidden' name='id' value='{$row['level_id']}'>
+                                    <button type='submit' class='btn btn-danger'>حذف</button>
+                                </form>
                             </td>";
                         echo "</tr>";
                     }

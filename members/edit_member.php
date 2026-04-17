@@ -93,7 +93,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['message'] = "تم تحديث بيانات العضو بنجاح!";
         $_SESSION['message_type'] = "success";
     } else {
-        $_SESSION['message'] = "حدث خطأ أثناء تحديث البيانات: " . mysqli_error($conn);
+        error_log("Edit member failed: " . mysqli_error($conn));
+        $_SESSION['message'] = "حدث خطأ أثناء تحديث البيانات.";
         $_SESSION['message_type'] = "error";
     }
 

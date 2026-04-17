@@ -27,7 +27,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         function createTable($conn, $tableName, $createTableQuery) {
             $createTableResult = mysqli_query($conn, $createTableQuery);
             if (!$createTableResult) {
-                echo "<p>حدث خطأ أثناء إنشاء جدول $tableName: " . mysqli_error($conn) . "</p>";
+                error_log("Install create table failed ($tableName): " . mysqli_error($conn));
+                echo "<p>حدث خطأ أثناء إنشاء جدول $tableName.</p>";
             }
         }
 
@@ -139,20 +140,38 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $ranking = 1;
         $role = 'مدير';
 
-        $insertFacultyQuery = "INSERT INTO faculty_members (member_name, academic_degree, join_date, ranking, role) VALUES ('$adminName', '$academicDegree', '$joinDate', $ranking, '$role')";
-        $insertFacultyResult = mysqli_query($conn, $insertFacultyQuery);
+        $insertFacultyQuery = "INSERT INTO faculty_members (member_name, academic_degree, join_date, ranking, role) VALUES (?, ?, ?, ?, ?)";
+        $insertFacultyStmt = mysqli_prepare($conn, $insertFacultyQuery);
+        if ($insertFacultyStmt) {
+            mysqli_stmt_bind_param($insertFacultyStmt, "sssis", $adminName, $academicDegree, $joinDate, $ranking, $role);
+        }
+        $insertFacultyResult = $insertFacultyStmt && mysqli_stmt_execute($insertFacultyStmt);
 
         if ($insertFacultyResult) {
             $adminMemberId = mysqli_insert_id($conn);
 
             // إضافة حساب المدير في جدول users
-            $insertAdminQuery = "INSERT INTO users (username, password, member_id, registration_status) VALUES ('$admin_user', '$admin_pass', $adminMemberId, 1)";
-            $insertAdminResult = mysqli_query($conn, $insertAdminQuery);
+            $registrationStatus = 1;
+            $insertAdminQuery = "INSERT INTO users (username, password, member_id, registration_status) VALUES (?, ?, ?, ?)";
+            $insertAdminStmt = mysqli_prepare($conn, $insertAdminQuery);
+            if ($insertAdminStmt) {
+                mysqli_stmt_bind_param($insertAdminStmt, "ssii", $admin_user, $admin_pass, $adminMemberId, $registrationStatus);
+            }
+            $insertAdminResult = $insertAdminStmt && mysqli_stmt_execute($insertAdminStmt);
 
             if ($insertAdminResult) {
                 echo "<p>تم إنشاء حساب المدير بنجاح.</p>";
             } else {
-                echo "<p>حدث خطأ أثناء إنشاء حساب المدير: " . mysqli_error($conn) . "</p>";
+                if ($insertAdminStmt) {
+                    error_log("Install create admin user failed: " . mysqli_stmt_error($insertAdminStmt));
+                } else {
+                    error_log("Install create admin user prepare failed: " . mysqli_error($conn));
+                }
+                echo "<p>حدث خطأ أثناء إنشاء حساب المدير.</p>";
+            }
+
+            if ($insertAdminStmt) {
+                mysqli_stmt_close($insertAdminStmt);
             }
 
             $insertDegreesQuery = "INSERT INTO academic_degrees (degree_name) VALUES ('أستاذ'), ('أستاذ مساعد'), ('مدرس'), ('مدرس مساعد'), ('معيد')";
@@ -161,10 +180,20 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             if ($insertDegreesResult) {
                 echo "<p>تم إضافة البيانات بنجاح.</p>";
             } else {
-                echo "<p>حدث خطأ أثناء إضافة البيانات: " . mysqli_error($conn) . "</p>";
+                error_log("Install seed academic degrees failed: " . mysqli_error($conn));
+                echo "<p>حدث خطأ أثناء إضافة البيانات.</p>";
             }
         } else {
-            echo "<p>حدث خطأ أثناء إضافة المدير إلى جدول faculty_members: " . mysqli_error($conn) . "</p>";
+            if ($insertFacultyStmt) {
+                error_log("Install insert admin faculty member failed: " . mysqli_stmt_error($insertFacultyStmt));
+            } else {
+                error_log("Install insert admin faculty member prepare failed: " . mysqli_error($conn));
+            }
+            echo "<p>حدث خطأ أثناء إضافة المدير إلى جدول أعضاء هيئة التدريس.</p>";
+        }
+
+        if ($insertFacultyStmt) {
+            mysqli_stmt_close($insertFacultyStmt);
         }
 
         echo "<p>تمت عملية التحقق وإنشاء الجداول بنجاح.</p>";

@@ -1,5 +1,7 @@
 <?php
 require_once("../db_config.php");
+require_once("../core/csrf.php");
+require_once("../core/flash.php");
 session_start();
 
 // التحقق من وجود معرف الجلسة للمستخدم المسجل
@@ -8,27 +10,36 @@ if (!isset($_SESSION['member_id'])) {
     exit();
 }
 
-// التحقق من وجود معرف السكشن في العنوان
-if (!isset($_GET['id']) || !ctype_digit($_GET['id'])) {
-    $_SESSION['message'] = "تعذر حذف السكشن: معرف غير صالح.";
-    $_SESSION['message_type'] = "error";
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header("Location: sections.php");
     exit();
 }
 
-$section_id = (int)$_GET['id'];
+if (!isset($_POST['csrf_token']) || !csrf_validate($_POST['csrf_token'])) {
+    flash_redirect('sections.php', 'تعذر حذف السكشن: طلب غير صالح.', 'error');
+}
 
-// إجراء استعلام DELETE لحذف السكشن من قاعدة البيانات
-$deleteQuery = "DELETE FROM sections WHERE section_id = '$section_id'";
-$deleteResult = mysqli_query($conn, $deleteQuery);
+if (!isset($_POST['id']) || !ctype_digit($_POST['id'])) {
+    flash_redirect('sections.php', 'تعذر حذف السكشن: معرف غير صالح.', 'error');
+}
 
-if ($deleteResult) {
-    $_SESSION['message'] = "تم حذف السكشن بنجاح!";
-    $_SESSION['message_type'] = "success";
+$section_id = (int)$_POST['id'];
+
+$deleteQuery = "DELETE FROM sections WHERE section_id = ?";
+$stmt = mysqli_prepare($conn, $deleteQuery);
+
+if ($stmt) {
+    mysqli_stmt_bind_param($stmt, "i", $section_id);
+    if (mysqli_stmt_execute($stmt)) {
+        flash_redirect('sections.php', 'تم حذف السكشن بنجاح!', 'success');
+    } else {
+        error_log("Delete section failed: " . mysqli_stmt_error($stmt));
+        flash_redirect('sections.php', 'حدث خطأ أثناء حذف السكشن.', 'error');
+    }
+    mysqli_stmt_close($stmt);
 } else {
-    error_log("Delete section failed: " . mysqli_error($conn));
-    $_SESSION['message'] = "حدث خطأ أثناء حذف السكشن.";
-    $_SESSION['message_type'] = "error";
+    error_log("Delete section prepare failed: " . mysqli_error($conn));
+    flash_redirect('sections.php', 'حدث خطأ أثناء حذف السكشن.', 'error');
 }
 
 header("Location: sections.php");

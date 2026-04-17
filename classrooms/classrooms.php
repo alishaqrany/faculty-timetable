@@ -1,5 +1,7 @@
 <?php
 require_once("../db_config.php");
+require_once("../core/csrf.php");
+require_once("../core/flash.php");
 
 // التحقق من تسجيل الدخول
 session_start();
@@ -10,36 +12,38 @@ if (!isset($_SESSION['member_id'])) {
     exit();
 }
 
-$message = "";
-$message_type = "";
-
-// جلب الرسالة من الجلسة، إذا كانت موجودة
-$message = isset($_SESSION['message']) ? $_SESSION['message'] : "";
-$message_type = isset($_SESSION['message_type']) ? $_SESSION['message_type'] : "";
-
-// مسح الرسالة من الجلسة بعد عرضها
-unset($_SESSION['message']);
-unset($_SESSION['message_type']);
+list($message, $message_type) = flash_consume();
 
 
 // التحقق من إرسال النموذج وإدخال البيانات في قاعدة البيانات
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $classroom_name = mysqli_real_escape_string($conn, $_POST['classroom_name']);
+    $classroom_name = trim($_POST['classroom_name']);
 
-    // إجراء استعلام INSERT لإدخال البيانات في جدول القاعات الدراسية
-    $insertQuery = "
-    INSERT INTO classrooms (classroom_name)
-    VALUES ('$classroom_name')
-    ";
+    if ($classroom_name === '') {
+        flash_redirect('classrooms.php', 'يرجى إدخال اسم القاعة الدراسية.', 'error');
+    }
 
-    $insertResult = mysqli_query($conn, $insertQuery);
+    $insertQuery = "INSERT INTO classrooms (classroom_name) VALUES (?)";
+    $insertStmt = mysqli_prepare($conn, $insertQuery);
+    if ($insertStmt) {
+        mysqli_stmt_bind_param($insertStmt, "s", $classroom_name);
+    }
+
+    $insertResult = $insertStmt && mysqli_stmt_execute($insertStmt);
 
     if ($insertResult) {
-        $message = "تم إدخال القاعة الدراسية بنجاح!";
-        $message_type = "success";
+        flash_redirect('classrooms.php', 'تم إدخال القاعة الدراسية بنجاح!', 'success');
     } else {
-        $message = "حدث خطأ أثناء إدخال القاعة الدراسية: " . mysqli_error($conn);
-        $message_type = "error";
+        if ($insertStmt) {
+            error_log("Insert classroom failed: " . mysqli_stmt_error($insertStmt));
+        } else {
+            error_log("Insert classroom prepare failed: " . mysqli_error($conn));
+        }
+        flash_redirect('classrooms.php', 'حدث خطأ أثناء إدخال القاعة الدراسية.', 'error');
+    }
+
+    if ($insertStmt) {
+        mysqli_stmt_close($insertStmt);
     }
 }
 ?>
@@ -123,13 +127,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $selectResult = mysqli_query($conn, $selectQuery);
 
                 if ($selectResult && mysqli_num_rows($selectResult) > 0) {
+                    $csrfToken = htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8');
                     while ($row = mysqli_fetch_assoc($selectResult)) {
                         echo "<tr>";
                         echo "<td>{$row['classroom_id']}</td>";
                         echo "<td>{$row['classroom_name']}</td>";
                         echo "<td>
                                 <a href='edit_classroom.php?id={$row['classroom_id']}' class='btn btn-warning'>تعديل</a>
-                                <a href='delete_classroom.php?id={$row['classroom_id']}' class='btn btn-danger' onclick='return confirm(\"هل أنت متأكد من حذف هذه القاعة الدراسية؟\")'>حذف</a>
+                                <form method='POST' action='delete_classroom.php' style='display:inline;' onsubmit='return confirm(\"هل أنت متأكد من حذف هذه القاعة الدراسية؟\")'>
+                                    <input type='hidden' name='csrf_token' value='{$csrfToken}'>
+                                    <input type='hidden' name='id' value='{$row['classroom_id']}'>
+                                    <button type='submit' class='btn btn-danger'>حذف</button>
+                                </form>
                             </td>";
                         echo "</tr>";
                     }

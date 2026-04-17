@@ -1,5 +1,7 @@
 <?php
 require_once("../db_config.php");
+require_once("../core/csrf.php");
+require_once("../core/flash.php");
 
 // التحقق من تسجيل الدخول
 session_start();
@@ -10,39 +12,44 @@ if (!isset($_SESSION['member_id'])) {
     exit();
 }
 
-$message = "";
-$message_type = "";
-
-// جلب الرسالة من الجلسة، إذا كانت موجودة
-$message = isset($_SESSION['message']) ? $_SESSION['message'] : "";
-$message_type = isset($_SESSION['message_type']) ? $_SESSION['message_type'] : "";
-
-// مسح الرسالة من الجلسة بعد عرضها
-unset($_SESSION['message']);
-unset($_SESSION['message_type']);
+list($message, $message_type) = flash_consume();
 
 
 
 // التحقق من إرسال النموذج وإدخال البيانات في قاعدة البيانات
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $section_name = mysqli_real_escape_string($conn, $_POST['section_name']);
-    $department_id = mysqli_real_escape_string($conn, $_POST['department_id']);
-    $level_id = mysqli_real_escape_string($conn, $_POST['level_id']);
+    $section_name = trim($_POST['section_name']);
+    $department_id = $_POST['department_id'];
+    $level_id = $_POST['level_id'];
 
-    // إجراء استعلام INSERT لإدخال البيانات في جدول السكاشن
-    $insertQuery = "
-    INSERT INTO sections (section_name, department_id, level_id)
-    VALUES ('$section_name', '$department_id', '$level_id')
-    ";
-
-    $insertResult = mysqli_query($conn, $insertQuery);
-
-    if ($insertResult) {
-        $message = "تم إدخال السكشن بنجاح!";
-        $message_type = "success";
+    if ($section_name === '' || !ctype_digit((string)$department_id) || !ctype_digit((string)$level_id)) {
+        flash_redirect('sections.php', 'حدث خطأ أثناء إدخال السكشن: بيانات غير صالحة.', 'error');
     } else {
-        $message = "حدث خطأ أثناء إدخال السكشن: " . mysqli_error($conn);
-        $message_type = "error";
+        $department_id = (int)$department_id;
+        $level_id = (int)$level_id;
+
+        $insertQuery = "INSERT INTO sections (section_name, department_id, level_id) VALUES (?, ?, ?)";
+        $insertStmt = mysqli_prepare($conn, $insertQuery);
+        if ($insertStmt) {
+            mysqli_stmt_bind_param($insertStmt, "sii", $section_name, $department_id, $level_id);
+        }
+
+        $insertResult = $insertStmt && mysqli_stmt_execute($insertStmt);
+
+        if ($insertResult) {
+            flash_redirect('sections.php', 'تم إدخال السكشن بنجاح!', 'success');
+        } else {
+            if ($insertStmt) {
+                error_log("Insert section failed: " . mysqli_stmt_error($insertStmt));
+            } else {
+                error_log("Insert section prepare failed: " . mysqli_error($conn));
+            }
+            flash_redirect('sections.php', 'حدث خطأ أثناء إدخال السكشن.', 'error');
+        }
+
+        if ($insertStmt) {
+            mysqli_stmt_close($insertStmt);
+        }
     }
 }
 ?>
@@ -167,6 +174,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $result = mysqli_query($conn, $selectQuery);
 
             if (mysqli_num_rows($result) > 0) {
+                $csrfToken = htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8');
                 while ($row = mysqli_fetch_assoc($result)) {
                     echo "<tr>";
                     echo "<td>" . $row['section_name'] . "</td>";
@@ -174,7 +182,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     echo "<td>" . $row['level_name'] . "</td>";
                     echo "<td>
                             <a href='edit_section.php?id={$row['section_id']}' class='btn btn-warning'>تعديل</a>
-                            <a href='delete_section.php?id={$row['section_id']}' class='btn btn-danger' onclick='return confirm(\"هل أنت متأكد من حذف هذا السكشن؟\")'>حذف</a>
+                            <form method='POST' action='delete_section.php' style='display:inline;' onsubmit='return confirm(\"هل أنت متأكد من حذف هذا السكشن؟\")'>
+                                <input type='hidden' name='csrf_token' value='{$csrfToken}'>
+                                <input type='hidden' name='id' value='{$row['section_id']}'>
+                                <button type='submit' class='btn btn-danger'>حذف</button>
+                            </form>
                           </td>";
                     echo "</tr>";
                 }

@@ -9,50 +9,86 @@ if (!isset($_SESSION['member_id'])) {
 }
 
 // التحقق من وجود معرف السكشن في العنوان
-if (!isset($_GET['id'])) {
+if (!isset($_GET['id']) || !ctype_digit($_GET['id'])) {
+    $_SESSION['message'] = "تعذر فتح صفحة التعديل: معرف غير صالح.";
+    $_SESSION['message_type'] = "error";
     header("Location: sections.php");
     exit();
 }
 
-$section_id = $_GET['id'];
+$section_id = (int)$_GET['id'];
 
 // جلب بيانات السكشن من قاعدة البيانات
-$query = "SELECT * FROM sections WHERE section_id = '$section_id'";
-$result = mysqli_query($conn, $query);
+$query = "SELECT section_name, department_id, level_id FROM sections WHERE section_id = ?";
+$stmt = mysqli_prepare($conn, $query);
 
-if (mysqli_num_rows($result) == 1) {
+if ($stmt) {
+    mysqli_stmt_bind_param($stmt, "i", $section_id);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+} else {
+    $result = false;
+}
+
+if ($result && mysqli_num_rows($result) == 1) {
     $row = mysqli_fetch_assoc($result);
     $section_name = $row['section_name'];
     $department_id = $row['department_id'];
     $level_id = $row['level_id'];
 } else {
+    if ($stmt) {
+        error_log("Edit section load failed: " . mysqli_stmt_error($stmt));
+    } else {
+        error_log("Edit section prepare failed: " . mysqli_error($conn));
+    }
+    $_SESSION['message'] = "تعذر تحميل بيانات السكشن.";
+    $_SESSION['message_type'] = "error";
     header("Location: sections.php");
     exit();
 }
 
+if ($stmt) {
+    mysqli_stmt_close($stmt);
+}
+
 // التحقق من إرسال النموذج وتحديث البيانات في قاعدة البيانات
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $section_name = mysqli_real_escape_string($conn, $_POST['section_name']);
-    $department_id = mysqli_real_escape_string($conn, $_POST['department_id']);
-    $level_id = mysqli_real_escape_string($conn, $_POST['level_id']);
+    $section_name = trim($_POST['section_name']);
+    $department_id = $_POST['department_id'];
+    $level_id = $_POST['level_id'];
 
-    // تحديث بيانات السكشن
-    $updateQuery = "
-    UPDATE sections SET
-    section_name = '$section_name',
-    department_id = '$department_id',
-    level_id = '$level_id'
-    WHERE section_id = '$section_id'
-    ";
+    if ($section_name === '' || !ctype_digit((string)$department_id) || !ctype_digit((string)$level_id)) {
+        $_SESSION['message'] = "تعذر تحديث السكشن: بيانات غير صالحة.";
+        $_SESSION['message_type'] = "error";
+        header("Location: sections.php");
+        exit();
+    }
 
-    $updateResult = mysqli_query($conn, $updateQuery);
+    $department_id = (int)$department_id;
+    $level_id = (int)$level_id;
 
-    if ($updateResult) {
+    $updateQuery = "UPDATE sections SET section_name = ?, department_id = ?, level_id = ? WHERE section_id = ?";
+    $updateStmt = mysqli_prepare($conn, $updateQuery);
+
+    if ($updateStmt) {
+        mysqli_stmt_bind_param($updateStmt, "siii", $section_name, $department_id, $level_id, $section_id);
+    }
+
+    if ($updateStmt && mysqli_stmt_execute($updateStmt)) {
         $_SESSION['message'] = "تم تحديث بيانات السكشن بنجاح!";
         $_SESSION['message_type'] = "success";
     } else {
-        $_SESSION['message'] = "حدث خطأ أثناء تحديث بيانات السكشن: " . mysqli_error($conn);
+        if ($updateStmt) {
+            error_log("Edit section update failed: " . mysqli_stmt_error($updateStmt));
+        } else {
+            error_log("Edit section update prepare failed: " . mysqli_error($conn));
+        }
+        $_SESSION['message'] = "حدث خطأ أثناء تحديث بيانات السكشن.";
         $_SESSION['message_type'] = "error";
+    }
+
+    if ($updateStmt) {
+        mysqli_stmt_close($updateStmt);
     }
 
     header("Location: sections.php");

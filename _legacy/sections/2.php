@@ -1,6 +1,6 @@
 ﻿<?php
-require_once("../db_config.php");
-session_start();
+header("Location: ../../sections/sections.php", true, 302);
+exit();
 
 // Ø§Ù„ØªØ­Ù‚Ù‚ Ù…Ù† ÙˆØ¬ÙˆØ¯ Ù…Ø¹Ø±Ù Ø§Ù„Ø¬Ù„Ø³Ø© Ù„Ù„Ù…Ø³ØªØ®Ø¯Ù… Ø§Ù„Ù…Ø³Ø¬Ù„
 if (!isset($_SESSION['member_id'])) {

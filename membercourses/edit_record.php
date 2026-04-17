@@ -9,48 +9,87 @@ if (!isset($_SESSION['member_id'])) {
 }
 
 // التحقق من وجود معرف السجل في العنوان
-if (!isset($_GET['id'])) {
+if (!isset($_GET['id']) || !ctype_digit($_GET['id'])) {
+    $_SESSION['message'] = "تعذر فتح صفحة التعديل: معرف غير صالح.";
+    $_SESSION['message_type'] = "error";
     header("Location: membercourses.php");
     exit();
 }
 
-$member_course_id = $_GET['id'];
+$member_course_id = (int)$_GET['id'];
 
 // جلب بيانات السجل من قاعدة البيانات
-$query = "SELECT * FROM member_courses WHERE member_course_id = '$member_course_id'";
-$result = mysqli_query($conn, $query);
+$query = "SELECT member_id, subject_id, section_id FROM member_courses WHERE member_course_id = ?";
+$stmt = mysqli_prepare($conn, $query);
 
-if (mysqli_num_rows($result) == 1) {
+if ($stmt) {
+    mysqli_stmt_bind_param($stmt, "i", $member_course_id);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+} else {
+    $result = false;
+}
+
+if ($result && mysqli_num_rows($result) == 1) {
     $row = mysqli_fetch_assoc($result);
     $member_id = $row['member_id'];
     $subject_id = $row['subject_id'];
     $section_id = $row['section_id'];
 } else {
+    if ($stmt) {
+        error_log("Edit member course load failed: " . mysqli_stmt_error($stmt));
+    } else {
+        error_log("Edit member course prepare failed: " . mysqli_error($conn));
+    }
+    $_SESSION['message'] = "تعذر تحميل بيانات السجل.";
+    $_SESSION['message_type'] = "error";
     header("Location: membercourses.php");
     exit();
 }
 
+if ($stmt) {
+    mysqli_stmt_close($stmt);
+}
+
 // التحقق من إرسال النموذج وتحديث البيانات في قاعدة البيانات
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $member_id = mysqli_real_escape_string($conn, $_POST['member_id']);
-    $subject_id = mysqli_real_escape_string($conn, $_POST['subject_id']);
-    $section_id = mysqli_real_escape_string($conn, $_POST['section_id']);
+    $member_id = $_POST['member_id'];
+    $subject_id = $_POST['subject_id'];
+    $section_id = $_POST['section_id'];
 
-    // تحديث بيانات السجل
-    $updateQuery = "
-    UPDATE member_courses SET
-    member_id = '$member_id',
-    subject_id = '$subject_id',
-    section_id = '$section_id'
-    WHERE member_course_id = '$member_course_id'
-    ";
+    if (!ctype_digit((string)$member_id) || !ctype_digit((string)$subject_id) || !ctype_digit((string)$section_id)) {
+        $_SESSION['message'] = "تعذر تحديث السجل: بيانات غير صالحة.";
+        $_SESSION['message_type'] = "error";
+        header("Location: membercourses.php");
+        exit();
+    }
 
-    if (mysqli_query($conn, $updateQuery)) {
+    $member_id = (int)$member_id;
+    $subject_id = (int)$subject_id;
+    $section_id = (int)$section_id;
+
+    $updateQuery = "UPDATE member_courses SET member_id = ?, subject_id = ?, section_id = ? WHERE member_course_id = ?";
+    $updateStmt = mysqli_prepare($conn, $updateQuery);
+
+    if ($updateStmt) {
+        mysqli_stmt_bind_param($updateStmt, "iiii", $member_id, $subject_id, $section_id, $member_course_id);
+    }
+
+    if ($updateStmt && mysqli_stmt_execute($updateStmt)) {
         $_SESSION['message'] = "تم تحديث السجل بنجاح!";
         $_SESSION['message_type'] = "success";
     } else {
-        $_SESSION['message'] = "حدث خطأ أثناء تحديث السجل: " . mysqli_error($conn);
+        if ($updateStmt) {
+            error_log("Edit member course update failed: " . mysqli_stmt_error($updateStmt));
+        } else {
+            error_log("Edit member course update prepare failed: " . mysqli_error($conn));
+        }
+        $_SESSION['message'] = "حدث خطأ أثناء تحديث السجل.";
         $_SESSION['message_type'] = "error";
+    }
+
+    if ($updateStmt) {
+        mysqli_stmt_close($updateStmt);
     }
 
     header("Location: membercourses.php");

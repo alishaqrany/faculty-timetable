@@ -70,11 +70,22 @@ if ($currentUserResult->num_rows > 0) {
     }
 
     // التحقق إذا كان العضو الحالي قد اختار مواعيده بالفعل
-    $chosenScheduleQuery = "SELECT * FROM timetable WHERE member_course_id IN (SELECT member_course_id FROM member_courses WHERE member_id = $userId)";
-    $chosenScheduleResult = $conn->query($chosenScheduleQuery);
+    $chosenScheduleQuery = "SELECT * FROM timetable WHERE member_course_id IN (SELECT member_course_id FROM member_courses WHERE member_id = ?)";
+    $chosenScheduleStmt = $conn->prepare($chosenScheduleQuery);
+    if ($chosenScheduleStmt) {
+        $chosenScheduleStmt->bind_param("i", $userId);
+        $chosenScheduleStmt->execute();
+        $chosenScheduleResult = $chosenScheduleStmt->get_result();
+    } else {
+        $chosenScheduleResult = false;
+    }
 
     if ($chosenScheduleResult->num_rows > 0) {
         echo "<p>عذرًا، قد قمت بتسجيل مواعيدك بالفعل. يرجى التواصل مع المسئول عن النظام لإجراء التعديلات.</p>";
+    }
+
+    if ($chosenScheduleStmt) {
+        $chosenScheduleStmt->close();
     }
 
 } else {

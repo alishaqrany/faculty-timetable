@@ -1,6 +1,6 @@
 <?php
-// تأكد من إضافة كود الاتصال بقاعدة البيانات هنا
-require_once("db_config.php");
+header("Location: ../scheduling.php", true, 302);
+exit();
 
 // التحقق من تسجيل الدخول
 session_start();
