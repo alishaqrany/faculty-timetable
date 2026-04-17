@@ -1,4 +1,8 @@
 <?php
+header("Location: faculty_members.php");
+exit();
+
+// ملف توافق لمسار قديم؛ يبقى المحتوى التالي غير مستخدم.
 require_once("../db_config.php");
 
 // التحقق من تسجيل الدخول

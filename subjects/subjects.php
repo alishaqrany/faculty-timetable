@@ -13,6 +13,12 @@ if (!isset($_SESSION['member_id'])) {
 $message = "";
 $message_type = "";
 
+if (isset($_SESSION['message'])) {
+    $message = $_SESSION['message'];
+    $message_type = isset($_SESSION['message_type']) ? $_SESSION['message_type'] : "";
+    unset($_SESSION['message'], $_SESSION['message_type']);
+}
+
 $tableName = "subjects";
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {

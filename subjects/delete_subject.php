@@ -7,22 +7,26 @@ if (!isset($_SESSION['member_id'])) {
     exit();
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    if (isset($_GET['subject_id'])) {
-        $subject_id = $_GET['subject_id'];
-
-        // قم بتنفيذ استعلام الحذف
-        $deleteQuery = "DELETE FROM subjects WHERE subject_id = $subject_id";
-        $deleteResult = mysqli_query($conn, $deleteQuery);
-
-        if ($deleteResult) {
-            echo "<p>تم حذف المادة بنجاح!</p>";
-            header("Location: subjects.php");
-            exit();
-
-        } else {
-            echo "<p>حدث خطأ أثناء حذف المادة: " . mysqli_error($conn) . "</p>";
-        }
-    }
+if (!isset($_GET['subject_id']) || !ctype_digit($_GET['subject_id'])) {
+    $_SESSION['message'] = "تعذر حذف المادة: معرف غير صالح.";
+    $_SESSION['message_type'] = "error";
+    header("Location: subjects.php");
+    exit();
 }
+
+$subject_id = (int)$_GET['subject_id'];
+$deleteQuery = "DELETE FROM subjects WHERE subject_id = $subject_id";
+$deleteResult = mysqli_query($conn, $deleteQuery);
+
+if ($deleteResult) {
+    $_SESSION['message'] = "تم حذف المادة بنجاح!";
+    $_SESSION['message_type'] = "success";
+} else {
+    error_log("Delete subject failed: " . mysqli_error($conn));
+    $_SESSION['message'] = "حدث خطأ أثناء حذف المادة.";
+    $_SESSION['message_type'] = "error";
+}
+
+header("Location: subjects.php");
+exit();
 ?>

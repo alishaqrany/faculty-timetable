@@ -44,19 +44,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// التحقق من إرسال طلب الحذف
-if (isset($_GET['delete_id'])) {
-    $delete_id = $_GET['delete_id'];
-    $deleteQuery = "DELETE FROM member_courses WHERE member_course_id = '$delete_id'";
-
-    if ($conn->query($deleteQuery) === TRUE) {
-        $message = "تم حذف السجل بنجاح!";
-        $message_type = "success";
-    } else {
-        $message = "حدث خطأ أثناء حذف السجل: " . $conn->error;
-        $message_type = "error";
-    }
-}
 ?>
 
 <!DOCTYPE html>
@@ -198,7 +185,7 @@ if (isset($_GET['delete_id'])) {
                     echo "<td>" . $row['section_name'] . "</td>";
                     echo "<td>
                             <a href='edit_record.php?id=" . $row['member_course_id'] . "' class='btn btn-warning'>تعديل</a>
-                            <a href='?delete_id=" . $row['member_course_id'] . "' class='btn btn-danger' onclick='return confirm(\"هل أنت متأكد أنك تريد الحذف؟\");'>حذف</a>
+                            <a href='delete_record.php?id=" . $row['member_course_id'] . "' class='btn btn-danger' onclick='return confirm(\"هل أنت متأكد أنك تريد الحذف؟\");'>حذف</a>
                           </td>";
                     echo "</tr>";
                 }

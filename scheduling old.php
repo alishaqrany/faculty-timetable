@@ -1,4 +1,8 @@
 <?php
+header("Location: scheduling.php");
+exit();
+
+// ملف توافق لمسار قديم؛ يبقى المحتوى التالي غير مستخدم.
 // تأكد من إضافة كود الاتصال بقاعدة البيانات هنا
 require_once("db_config.php");
 

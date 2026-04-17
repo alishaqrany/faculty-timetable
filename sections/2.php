@@ -1,4 +1,8 @@
 <?php
+header("Location: sections.php");
+exit();
+
+// ملف توافق لمسار قديم؛ يبقى المحتوى التالي غير مستخدم.
 require_once("db_config.php");
 session_start();
 

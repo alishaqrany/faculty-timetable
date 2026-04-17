@@ -8,12 +8,14 @@ if (!isset($_SESSION['member_id'])) {
 }
 
 // التحقق من وجود معرف العضو في العنوان
-if (!isset($_GET['id'])) {
-    header("Location: index.php");
+if (!isset($_GET['id']) || !ctype_digit($_GET['id'])) {
+    $_SESSION['message'] = "تعذر حذف العضو: معرف غير صالح.";
+    $_SESSION['message_type'] = "error";
+    header("Location: faculty_members.php");
     exit();
 }
 
-$member_id = $_GET['id'];
+$member_id = (int)$_GET['id'];
 
 
         // قم بتنفيذ استعلام الحذف
@@ -21,11 +23,16 @@ $member_id = $_GET['id'];
         $deleteResult = mysqli_query($conn, $deleteQuery);
 
         if ($deleteResult) {
-            echo "<p>تم حذف المادة بنجاح!</p>";
-            header("Location: index.php");
+            $_SESSION['message'] = "تم حذف العضو بنجاح!";
+            $_SESSION['message_type'] = "success";
+            header("Location: faculty_members.php");
             exit();
 
         } else {
-            echo "<p>حدث خطأ أثناء حذف المادة: " . mysqli_error($conn) . "</p>";
+            error_log("Delete member failed: " . mysqli_error($conn));
+            $_SESSION['message'] = "حدث خطأ أثناء حذف العضو.";
+            $_SESSION['message_type'] = "error";
+            header("Location: faculty_members.php");
+            exit();
         }
 ?>

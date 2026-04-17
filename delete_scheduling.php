@@ -8,13 +8,21 @@ if (!isset($_SESSION['member_id'])) {
     exit();
 }
 
-$timetableId = $_GET['id'];
-
-$deleteQuery = "DELETE FROM timetable WHERE timetable_id = $timetableId";
-
-if ($conn->query($deleteQuery) === TRUE) {
+if (!isset($_GET['id']) || !ctype_digit($_GET['id'])) {
     header("Location: scheduling.php");
-} else {
-    echo "حدث خطأ أثناء حذف البيانات: " . $conn->error;
+    exit();
 }
+
+$timetableId = (int)$_GET['id'];
+$deleteQuery = "DELETE FROM timetable WHERE timetable_id = ?";
+$stmt = $conn->prepare($deleteQuery);
+
+if ($stmt) {
+    $stmt->bind_param("i", $timetableId);
+    $stmt->execute();
+    $stmt->close();
+}
+
+header("Location: scheduling.php");
+exit();
 ?>
