@@ -66,16 +66,33 @@ class Timetable extends \Model
         $days = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس'];
         $sections = [];
         $pivot = [];
+        $data = [];
+
+        $sessions = \Database::getInstance()->fetchAll(
+            "SELECT session_id, session_name, day, start_time, end_time
+             FROM sessions
+             WHERE is_active = 1
+             ORDER BY FIELD(day,'الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس'), start_time"
+        );
 
         foreach ($entries as $entry) {
             $key = $entry['day'] . '|' . $entry['session_name'];
             $secName = $entry['section_name'];
             $sections[$secName] = true;
             $pivot[$key][$secName] = $entry;
+
+            // For timetable view compatibility: one cell per (day, session_id)
+            // may contain multiple entries when overlaps exist.
+            $sessionId = (int)($entry['session_id'] ?? 0);
+            if ($sessionId > 0) {
+                $data[$entry['day']][$sessionId][] = $entry;
+            }
         }
 
         return [
             'days'     => $days,
+            'sessions' => $sessions,
+            'data'     => $data,
             'sections' => array_keys($sections),
             'pivot'    => $pivot,
             'entries'  => $entries,

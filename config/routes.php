@@ -67,6 +67,11 @@ $router->group('', ['AuthMiddleware', 'CsrfMiddleware'], function (Router $route
     // Settings
     $router->get('/settings', 'SettingController@index');
     $router->post('/settings', 'SettingController@update');
+    $router->get('/settings/data-transfer/export-sql', 'DataTransferController@exportSql');
+    $router->get('/settings/data-transfer/export-excel', 'DataTransferController@exportExcel');
+    $router->get('/settings/data-transfer/sample-sql', 'DataTransferController@downloadSampleSql');
+    $router->post('/settings/data-transfer/import-sql', 'DataTransferController@importSql');
+    $router->post('/settings/data-transfer/import-excel', 'DataTransferController@importExcel');
 });
 
 // ── API routes ─────────────────────────────────────────────────────

@@ -85,34 +85,64 @@ $__breadcrumb = [['label' => 'الجدول الدراسي']];
 
     <!-- Pivot Table (if dept + level selected) -->
     <?php if ($pivotData): ?>
+    <style>
+        .timetable-pivot { font-size: 0.95rem; }
+        .timetable-pivot thead { background-color: #2c3e50; }
+        .timetable-pivot th { color: #fff; font-weight: 600; padding: 12px 8px; }
+        .timetable-pivot tbody td { padding: 8px 6px; vertical-align: middle; min-height: 80px; }
+        .timetable-pivot .day-header { background-color: #ecf0f1; font-weight: bold; text-align: center; }
+        .timetable-pivot .course-cell { border-radius: 4px; padding: 8px; margin-bottom: 4px; color: #fff; word-wrap: break-word; font-size: 0.9rem; line-height: 1.4; }
+        .timetable-pivot .course-theory { background-color: #f39c12; } /* أصفر للنظري */
+        .timetable-pivot .course-practical { background-color: #3498db; } /* أزرق للعملي */
+        .timetable-pivot .course-mixed { background-color: #9b59b6; } /* بنفسجي للمختلط */
+        .timetable-pivot .course-lab { background-color: #e67e22; } /* برتقالي للمختبر */
+        .timetable-pivot .course-name { font-weight: bold; margin-bottom: 4px; }
+        .timetable-pivot .course-instructor { font-size: 0.85rem; margin: 3px 0; }
+        .timetable-pivot .course-room { font-size: 0.8rem; margin-top: 3px; }
+        .timetable-pivot .empty-cell { background-color: #f8f9fa; color: #999; text-align: center; }
+    </style>
     <div class="card">
-        <div class="card-header"><h3 class="card-title"><i class="fas fa-table ml-1"></i> الجدول المحوري</h3></div>
+        <div class="card-header"><h3 class="card-title"><i class="fas fa-table ml-1"></i> جدول التوزيع</h3></div>
         <div class="card-body table-responsive p-0">
-            <table class="table table-bordered text-center">
-                <thead class="thead-dark">
+            <table class="table table-bordered timetable-pivot" style="margin: 0;">
+                <thead>
                     <tr>
-                        <th>اليوم / الفترة</th>
+                        <th style="width: 80px;">اليوم</th>
                         <?php foreach ($pivotData['sessions'] as $sess): ?>
-                            <th><?= e($sess['session_name'] ?? $sess['start_time']) ?><br><small><?= e($sess['start_time']) ?>-<?= e($sess['end_time']) ?></small></th>
+                            <th><?= e($sess['session_name'] ?? '') ?><br><small><?= e($sess['start_time'] ?? '') ?> - <?= e($sess['end_time'] ?? '') ?></small></th>
                         <?php endforeach; ?>
                     </tr>
                 </thead>
                 <tbody>
                     <?php foreach ($pivotData['days'] as $day): ?>
                     <tr>
-                        <td class="font-weight-bold bg-light"><?= e($day) ?></td>
+                        <td class="day-header"><?= e($day) ?></td>
                         <?php foreach ($pivotData['sessions'] as $sess): ?>
                             <td>
                                 <?php
-                                $cell = $pivotData['data'][$day][$sess['session_id']] ?? null;
-                                if ($cell):
+                                $cellEntries = $pivotData['data'][$day][$sess['session_id']] ?? [];
+                                if (!empty($cellEntries)):
                                 ?>
-                                    <strong><?= e($cell['subject_name']) ?></strong><br>
-                                    <small class="text-muted"><?= e($cell['member_name']) ?></small><br>
-                                    <span class="badge badge-info"><?= e($cell['classroom_name']) ?></span>
-                                    <span class="badge badge-secondary"><?= e($cell['section_name']) ?></span>
+                                    <?php foreach ($cellEntries as $idx => $cell): ?>
+                                        <?php
+                                        $courseType = strtolower($cell['subject_type'] ?? 'نظري');
+                                        $cssClass = 'course-cell course-theory';
+                                        if (strpos($courseType, 'عملي') !== false && strpos($courseType, 'نظري') !== false) {
+                                            $cssClass = 'course-cell course-mixed';
+                                        } elseif (strpos($courseType, 'عملي') !== false) {
+                                            $cssClass = 'course-cell course-practical';
+                                        } elseif (strpos($courseType, 'مختبر') !== false || strpos($courseType, 'lab') !== false) {
+                                            $cssClass = 'course-cell course-lab';
+                                        }
+                                        ?>
+                                        <div class="<?= $cssClass ?>">
+                                            <div class="course-name"><?= e($cell['subject_name']) ?></div>
+                                            <div class="course-instructor">أ/ <?= e($cell['member_name']) ?></div>
+                                            <div class="course-room"><?= e($cell['classroom_name']) ?></div>
+                                        </div>
+                                    <?php endforeach; ?>
                                 <?php else: ?>
-                                    <span class="text-muted">—</span>
+                                    <div class="empty-cell">—</div>
                                 <?php endif; ?>
                             </td>
                         <?php endforeach; ?>

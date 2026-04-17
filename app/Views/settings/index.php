@@ -51,3 +51,69 @@ $__breadcrumb = [['label' => 'الإعدادات']];
         <button type="submit" class="btn btn-primary btn-lg"><i class="fas fa-save ml-1"></i> حفظ الإعدادات</button>
     </div>
 </form>
+
+<div class="row mt-2">
+    <div class="col-md-6">
+        <div class="card card-warning card-outline">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fas fa-database ml-1"></i> النسخ الاحتياطي والاستعادة (SQL)</h3>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-3">تصدير أو استيراد جميع بيانات النظام بصيغة SQL (الأقسام، الشعب، الجلسات، الأعوام، الجداول، المستخدمين، الصلاحيات، وكل الجداول).</p>
+
+                <a href="<?= url('/settings/data-transfer/export-sql') ?>" class="btn btn-outline-primary mb-3">
+                    <i class="fas fa-download ml-1"></i> تصدير نسخة SQL كاملة
+                </a>
+
+                <form method="POST" action="<?= url('/settings/data-transfer/import-sql') ?>" enctype="multipart/form-data" onsubmit="return confirm('سيتم استيراد البيانات من ملف SQL. هل تريد المتابعة؟');">
+                    <?= csrf_field() ?>
+                    <div class="form-group">
+                        <label>استيراد ملف SQL</label>
+                        <input type="file" name="sql_file" class="form-control-file" accept=".sql" required>
+                    </div>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="fas fa-file-import ml-1"></i> استيراد SQL
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card card-info card-outline">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fas fa-file-excel ml-1"></i> النسخ الاحتياطي والاستعادة (Excel)</h3>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-3">تصدير أو استيراد جميع بيانات النظام بصيغة Excel/XML متعددة الأوراق (ورقة لكل جدول).</p>
+
+                <a href="<?= url('/settings/data-transfer/export-excel') ?>" class="btn btn-outline-success mb-3">
+                    <i class="fas fa-download ml-1"></i> تصدير نسخة Excel كاملة
+                </a>
+
+                <form method="POST" action="<?= url('/settings/data-transfer/import-excel') ?>" enctype="multipart/form-data" onsubmit="return confirm('استيراد Excel سيستبدل البيانات الحالية. هل تريد المتابعة؟');">
+                    <?= csrf_field() ?>
+                    <div class="form-group">
+                        <label>استيراد ملف Excel/XML</label>
+                        <input type="file" name="excel_file" class="form-control-file" accept=".xls,.xml" required>
+                    </div>
+                    <button type="submit" class="btn btn-info">
+                        <i class="fas fa-file-import ml-1"></i> استيراد Excel
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card card-secondary card-outline">
+    <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-vial ml-1"></i> ملف بيانات تجريبي</h3>
+    </div>
+    <div class="card-body">
+        <p class="text-muted mb-3">يمكنك تنزيل ملف SQL تجريبي يحتوي بيانات وهمية لاختبار كامل النظام (الأقسام، الشعب، المواد، الجلسات، الجداول، وحسابات تجريبية).</p>
+        <a href="<?= url('/settings/data-transfer/sample-sql') ?>" class="btn btn-outline-dark">
+            <i class="fas fa-file-download ml-1"></i> تنزيل sample_dummy_data.sql
+        </a>
+    </div>
+</div>
