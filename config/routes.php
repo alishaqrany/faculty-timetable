@@ -28,6 +28,7 @@ $router->group('', ['AuthMiddleware', 'CsrfMiddleware'], function (Router $route
     $router->resource('/subjects', 'SubjectController');
     $router->resource('/divisions', 'DivisionController');
     $router->get('/api/divisions/by-dept-level', 'DivisionController@byDepartmentLevel');
+    $router->post('/sections/generate-auto', 'SectionController@generateAuto');
     $router->resource('/sections', 'SectionController');
     $router->get('/api/sections/by-division', 'SectionController@byDivision');
     $router->resource('/classrooms', 'ClassroomController');

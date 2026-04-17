@@ -9,6 +9,9 @@ $__breadcrumb = [['label' => 'السكاشن']];
         <h3 class="card-title">قائمة السكاشن</h3>
         <?php if (can('sections.create')): ?>
         <div class="card-tools">
+            <button type="button" class="btn btn-success btn-sm ml-1" data-toggle="modal" data-target="#autoSectionsModal">
+                <i class="fas fa-magic ml-1"></i> إنشاء وتوزيع تلقائي
+            </button>
             <a href="<?= url('/sections/create') ?>" class="btn btn-primary btn-sm">
                 <i class="fas fa-plus ml-1"></i> إضافة سكشن
             </a>
@@ -89,3 +92,138 @@ $__breadcrumb = [['label' => 'السكاشن']];
         <?php endif; ?>
     </div>
 </div>
+
+<?php if (can('sections.create')): ?>
+<div class="modal fade" id="autoSectionsModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <form method="POST" action="<?= url('/sections/generate-auto') ?>" id="autoSectionsForm">
+                <?= csrf_field() ?>
+                <div class="modal-header bg-success">
+                    <h5 class="modal-title"><i class="fas fa-magic ml-1"></i> إنشاء وتوزيع السكاشن تلقائياً</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info py-2">
+                        <strong>التسمية الافتراضية:</strong> سيتم الإنشاء بصيغة <code>سكشن 1</code>، <code>سكشن 2</code>...
+                    </div>
+
+                    <div class="form-group">
+                        <label>نطاق الإنشاء</label>
+                        <div class="btn-group btn-group-toggle w-100" data-toggle="buttons">
+                            <label class="btn btn-outline-primary active" style="flex:1">
+                                <input type="radio" name="target_type" value="division" checked> لشعبة واحدة
+                            </label>
+                            <label class="btn btn-outline-primary" style="flex:1">
+                                <input type="radio" name="target_type" value="level"> لفرقة كاملة
+                            </label>
+                        </div>
+                    </div>
+
+                    <div id="divisionTargetGroup" class="form-group">
+                        <label>اختر الشعبة <span class="text-danger">*</span></label>
+                        <select name="division_id" id="autoDivisionId" class="form-control select2" required>
+                            <option value="">-- اختر الشعبة --</option>
+                            <?php foreach (($divisions ?? []) as $div): ?>
+                                <option value="<?= $div['division_id'] ?>">
+                                    <?= e($div['division_name']) ?> — <?= e($div['department_name']) ?> / <?= e($div['level_name']) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
+                    <div id="levelTargetGroup" style="display:none;">
+                        <div class="row">
+                            <div class="col-md-6 form-group">
+                                <label>القسم <span class="text-danger">*</span></label>
+                                <select name="department_id" id="autoDepartmentId" class="form-control select2" disabled>
+                                    <option value="">-- اختر القسم --</option>
+                                    <?php foreach (($departments ?? []) as $dep): ?>
+                                        <option value="<?= $dep['department_id'] ?>"><?= e($dep['department_name']) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="col-md-6 form-group">
+                                <label>الفرقة <span class="text-danger">*</span></label>
+                                <select name="level_id" id="autoLevelId" class="form-control select2" disabled>
+                                    <option value="">-- اختر الفرقة --</option>
+                                    <?php foreach (($levels ?? []) as $lvl): ?>
+                                        <option value="<?= $lvl['level_id'] ?>"><?= e($lvl['level_name']) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                        </div>
+                        <small class="text-muted">سيتم إنشاء نفس عدد السكاشن لكل شعبة داخل الفرقة المختارة. وإذا لم توجد شعب سيتم إنشاء شعبة "عامة" تلقائياً.</small>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 form-group">
+                            <label>عدد السكاشن</label>
+                            <input type="number" name="sections_count" class="form-control" value="2" min="1" max="30" required>
+                        </div>
+                        <div class="col-md-4 form-group">
+                            <label>سعة كل سكشن</label>
+                            <input type="number" name="capacity" class="form-control" value="25" min="1" required>
+                        </div>
+                        <div class="col-md-4 form-group">
+                            <label>بداية الترقيم</label>
+                            <input type="number" name="start_number" class="form-control" value="1" min="1" required>
+                        </div>
+                    </div>
+
+                    <small id="distributionHelp" class="text-muted d-block">
+                        سيتم إنشاء العدد المحدد للشعبة المختارة.
+                    </small>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-bolt ml-1"></i> تنفيذ الإنشاء التلقائي
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const targetRadios = document.querySelectorAll('input[name="target_type"]');
+    const divisionTargetGroup = document.getElementById('divisionTargetGroup');
+    const levelTargetGroup = document.getElementById('levelTargetGroup');
+    const autoDivisionId = document.getElementById('autoDivisionId');
+    const autoDepartmentId = document.getElementById('autoDepartmentId');
+    const autoLevelId = document.getElementById('autoLevelId');
+    const distributionHelp = document.getElementById('distributionHelp');
+
+    function toggleTargetMode() {
+        const selected = document.querySelector('input[name="target_type"]:checked').value;
+        const isDivision = selected === 'division';
+
+        divisionTargetGroup.style.display = isDivision ? 'block' : 'none';
+        levelTargetGroup.style.display = isDivision ? 'none' : 'block';
+
+        autoDivisionId.disabled = !isDivision;
+        autoDivisionId.required = isDivision;
+
+        autoDepartmentId.disabled = isDivision;
+        autoDepartmentId.required = !isDivision;
+
+        autoLevelId.disabled = isDivision;
+        autoLevelId.required = !isDivision;
+
+        distributionHelp.textContent = isDivision
+            ? 'سيتم إنشاء العدد المحدد للشعبة المختارة.'
+            : 'سيتم إنشاء العدد المحدد لكل شعبة داخل الفرقة المختارة.';
+    }
+
+    targetRadios.forEach(function (radio) {
+        radio.addEventListener('change', toggleTargetMode);
+    });
+
+    toggleTargetMode();
+});
+</script>
+<?php endif; ?>
