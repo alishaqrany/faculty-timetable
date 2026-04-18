@@ -122,7 +122,7 @@ $__breadcrumb = [['label' => 'الإشعارات']];
                         </div>
                     </div>
                 </div>
-                <div class="card-footer text-left">
+                <div class="card-footer text-right">
                     <button type="submit" class="btn btn-primary">
                         <i class="fas fa-paper-plane ml-1"></i> إرسال
                     </button>

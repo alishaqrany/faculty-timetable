@@ -72,7 +72,7 @@ $showSystemMenu = $canUsers || $canNotifications || $canAudit || $canSettings ||
 <aside class="main-sidebar sidebar-dark-primary elevation-4">
     <!-- Brand -->
     <a href="<?= url('/') ?>" class="brand-link">
-        <i class="fas fa-calendar-alt brand-image elevation-3 mt-1 mr-2" style="font-size: 1.6rem; color: #fff;"></i>
+        <i class="fas fa-calendar-alt brand-image brand-icon"></i>
         <span class="brand-text font-weight-bold"><?= e(config('app.name', 'نظام الجداول')) ?></span>
     </a>
 
