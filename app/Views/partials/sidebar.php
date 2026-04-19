@@ -1,299 +1,231 @@
 <?php
-$currentPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
-$basePath = config('app.base_path', '');
-$current = str_replace($basePath, '', $currentPath);
-$current = '/' . trim($current, '/');
+$uriPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
+$uriPath = is_string($uriPath) ? $uriPath : '/';
 
-if (!function_exists('isActive')) {
-    function isActive(string $path, string $current): string {
-        if ($path === '/') return ($current === '/' || $current === '') ? 'active' : '';
-        return str_starts_with($current, $path) ? 'active' : '';
+$basePath = trim((string) config('app.base_path', ''), '/');
+if ($basePath !== '') {
+    $prefix = '/' . $basePath;
+    if (str_starts_with($uriPath, $prefix)) {
+        $uriPath = substr($uriPath, strlen($prefix));
     }
 }
 
-if (!function_exists('menuOpenAny')) {
-    function menuOpenAny(array $paths, string $current): string {
-        foreach ($paths as $path) {
-            if (str_starts_with($current, $path)) {
-                return 'menu-open';
-            }
+$currentPath = '/' . trim($uriPath, '/');
+if ($currentPath === '//') {
+    $currentPath = '/';
+}
+
+$matchesRoute = static function (string $path) use ($currentPath): bool {
+    if ($path === '/') {
+        return $currentPath === '/';
+    }
+
+    return $currentPath === $path || str_starts_with($currentPath, $path . '/');
+};
+
+$matchesAny = static function (array $paths) use ($matchesRoute): bool {
+    foreach ($paths as $path) {
+        if ($matchesRoute($path)) {
+            return true;
         }
-        return '';
     }
-}
 
-if (!function_exists('activeAny')) {
-    function activeAny(array $paths, string $current): string {
-        foreach ($paths as $path) {
-            if (str_starts_with($current, $path)) {
-                return 'active';
-            }
+    return false;
+};
+
+$permissions = [
+    'scheduling' => can('scheduling.view'),
+    'timetable' => can('timetable.view'),
+    'members' => can('members.view'),
+    'subjects' => can('subjects.view'),
+    'member_courses' => can('membercourses.view'),
+    'academic_years' => can('academic_years.view'),
+    'semesters' => can('semesters.view'),
+    'departments' => can('departments.view'),
+    'levels' => can('levels.view'),
+    'divisions' => can('divisions.view'),
+    'sections' => can('sections.view'),
+    'classrooms' => can('classrooms.view'),
+    'sessions' => can('sessions.view'),
+    'notifications' => can('notifications.view'),
+    'users' => can('users.view'),
+    'audit' => can('audit.view'),
+    'settings' => can('settings.view'),
+    'backup' => can('backup.view'),
+];
+
+$sectionBlueprint = [
+    [
+        'header' => 'منصة التشغيل',
+        'title' => 'محرك الجدولة',
+        'icon' => 'fas fa-satellite-dish',
+        'items' => [
+            ['label' => 'الجدولة', 'path' => '/scheduling', 'icon' => 'far fa-calendar-check', 'permission' => 'scheduling'],
+            ['label' => 'الجدول الدراسي', 'path' => '/timetable', 'icon' => 'far fa-clock', 'permission' => 'timetable'],
+        ],
+    ],
+    [
+        'header' => 'التدريس',
+        'title' => 'الهيئة والمقررات',
+        'icon' => 'fas fa-chalkboard-teacher',
+        'items' => [
+            ['label' => 'أعضاء هيئة التدريس', 'path' => '/members', 'icon' => 'far fa-user', 'permission' => 'members'],
+            ['label' => 'المقررات', 'path' => '/subjects', 'icon' => 'far fa-book-open', 'permission' => 'subjects'],
+            ['label' => 'تكليفات التدريس', 'path' => '/member-courses', 'icon' => 'far fa-list-alt', 'permission' => 'member_courses'],
+        ],
+    ],
+    [
+        'header' => 'البنية الأكاديمية',
+        'title' => 'الهيكل والتنظيم',
+        'icon' => 'fas fa-project-diagram',
+        'items' => [
+            ['label' => 'السنوات الأكاديمية', 'path' => '/academic-years', 'icon' => 'far fa-calendar', 'permission' => 'academic_years'],
+            ['label' => 'الفصول الدراسية', 'path' => '/semesters', 'icon' => 'far fa-flag', 'permission' => 'semesters'],
+            ['label' => 'الأقسام', 'path' => '/departments', 'icon' => 'far fa-building', 'permission' => 'departments'],
+            ['label' => 'الفرق', 'path' => '/levels', 'icon' => 'fas fa-layer-group', 'permission' => 'levels'],
+            ['label' => 'الشعب', 'path' => '/divisions', 'icon' => 'far fa-object-group', 'permission' => 'divisions'],
+            ['label' => 'السكاشن', 'path' => '/sections', 'icon' => 'far fa-clone', 'permission' => 'sections'],
+        ],
+    ],
+    [
+        'header' => 'الموارد',
+        'title' => 'القاعات والفترات',
+        'icon' => 'fas fa-boxes',
+        'items' => [
+            ['label' => 'القاعات', 'path' => '/classrooms', 'icon' => 'far fa-square', 'permission' => 'classrooms'],
+            ['label' => 'الفترات الزمنية', 'path' => '/sessions', 'icon' => 'far fa-hourglass', 'permission' => 'sessions'],
+        ],
+    ],
+    [
+        'header' => 'المتابعة',
+        'title' => 'الإدارة والتحكم',
+        'icon' => 'fas fa-tools',
+        'items' => [
+            ['label' => 'الإشعارات', 'path' => '/notifications', 'icon' => 'far fa-bell', 'permission' => 'notifications'],
+            ['label' => 'المستخدمون', 'path' => '/users', 'icon' => 'fas fa-users', 'permission' => 'users'],
+            ['label' => 'سجل المراجعة', 'path' => '/audit-logs', 'icon' => 'far fa-clipboard', 'permission' => 'audit'],
+            ['label' => 'الإعدادات', 'path' => '/settings', 'icon' => 'fas fa-sliders-h', 'permission' => 'settings'],
+            ['label' => 'النسخ الاحتياطي', 'path' => '/backups', 'icon' => 'fas fa-database', 'permission' => 'backup'],
+        ],
+    ],
+];
+
+$visibleSections = [];
+foreach ($sectionBlueprint as $section) {
+    $visibleItems = [];
+
+    foreach ($section['items'] as $item) {
+        $permissionKey = $item['permission'] ?? null;
+        if ($permissionKey && empty($permissions[$permissionKey])) {
+            continue;
         }
-        return '';
+        $visibleItems[] = $item;
+    }
+
+    if (!empty($visibleItems)) {
+        $section['items'] = $visibleItems;
+        $visibleSections[] = $section;
     }
 }
 
-$operationsPaths = ['/scheduling', '/timetable'];
-$teachingPaths = ['/members', '/subjects', '/member-courses'];
-$structurePaths = ['/academic-years', '/semesters', '/departments', '/levels', '/divisions', '/sections'];
-$resourcesPaths = ['/classrooms', '/sessions'];
-$systemPaths = ['/users', '/notifications', '/audit-logs', '/settings', '/backups', '/profile'];
+$accountLinks = [
+    ['label' => 'الملف الشخصي', 'path' => '/profile', 'icon' => 'fas fa-id-card'],
+    ['label' => 'الإعدادات', 'path' => '/settings', 'icon' => 'fas fa-cog', 'permission' => 'settings'],
+    ['label' => 'تسجيل الخروج', 'path' => '/logout', 'icon' => 'fas fa-sign-out-alt', 'class' => 'text-danger'],
+];
 
-$canScheduling = can('scheduling.view');
-$canTimetable = can('timetable.view');
+$visibleAccountLinks = [];
+foreach ($accountLinks as $link) {
+    $permissionKey = $link['permission'] ?? null;
+    if ($permissionKey && empty($permissions[$permissionKey])) {
+        continue;
+    }
+    $visibleAccountLinks[] = $link;
+}
 
-$canMembers = can('members.view');
-$canSubjects = can('subjects.view');
-$canMemberCourses = can('membercourses.view');
-
-$canAcademicYears = can('academic_years.view');
-$canSemesters = can('semesters.view');
-$canDepartments = can('departments.view');
-$canLevels = can('levels.view');
-$canDivisions = can('divisions.view');
-$canSections = can('sections.view');
-
-$canClassrooms = can('classrooms.view');
-$canSessions = can('sessions.view');
-
-$canUsers = can('users.view');
-$canNotifications = can('notifications.view');
-$canAudit = can('audit.view');
-$canSettings = can('settings.view');
-$canBackup = can('backup.view');
-
-$showOperationsMenu = $canScheduling || $canTimetable;
-$showTeachingMenu = $canMembers || $canSubjects || $canMemberCourses;
-$showStructureMenu = $canAcademicYears || $canSemesters || $canDepartments || $canLevels || $canDivisions || $canSections;
-$showResourcesMenu = $canClassrooms || $canSessions;
-$showSystemMenu = $canUsers || $canNotifications || $canAudit || $canSettings || $canBackup;
+$username = trim((string) ($auth['username'] ?? 'مستخدم'));
+$initial = function_exists('mb_substr')
+    ? mb_substr($username, 0, 1, 'UTF-8')
+    : substr($username, 0, 1);
 ?>
-<!-- Main Sidebar -->
-<aside class="main-sidebar sidebar-dark-primary elevation-4">
-    <!-- Brand -->
-    <a href="<?= url('/') ?>" class="brand-link">
-        <i class="fas fa-calendar-alt brand-image brand-icon"></i>
-        <span class="brand-text font-weight-bold"><?= e(config('app.name', 'نظام الجداول')) ?></span>
+<aside class="main-sidebar sidebar-rebuild-v3 elevation-0">
+    <a href="<?= url('/') ?>" class="brand-link sidebar-rebuild-brand">
+        <span class="sidebar-rebuild-logo" aria-hidden="true">
+            <i class="fas fa-bezier-curve"></i>
+        </span>
+        <span class="sidebar-rebuild-brand-text">
+            <strong><?= e(config('app.name', 'نظام الجداول')) ?></strong>
+            <small>نظام ملاحة جديد</small>
+        </span>
     </a>
 
-    <!-- Sidebar -->
-    <div class="sidebar">
-        <!-- User Panel -->
-        <div class="user-panel mt-3 pb-3 mb-3 d-flex">
-            <div class="image">
-                <i class="fas fa-user-circle fa-2x text-light"></i>
-            </div>
-            <div class="info">
-                <a href="<?= url('/profile') ?>" class="d-block"><?= e($auth['username'] ?? '') ?></a>
+    <div class="sidebar sidebar-rebuild-scroll">
+        <div class="sidebar-rebuild-profile">
+            <span class="sidebar-rebuild-avatar"><?= e($initial) ?></span>
+            <div class="sidebar-rebuild-user">
+                <a href="<?= url('/profile') ?>"><?= e($username) ?></a>
+                <span>جلسة عمل نشطة</span>
             </div>
         </div>
 
-        <!-- Sidebar Menu -->
-        <nav class="mt-2">
-            <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu">
-
-                <li class="nav-header">مركز التشغيل</li>
-
+        <nav class="sidebar-rebuild-nav mt-2">
+            <ul class="nav nav-sidebar nav-child-indent flex-column" data-widget="treeview" data-accordion="false" role="menu">
                 <li class="nav-item">
-                    <a href="<?= url('/') ?>" class="nav-link <?= isActive('/', $current) ?>">
-                        <i class="nav-icon fas fa-tachometer-alt"></i>
+                    <a href="<?= url('/') ?>" class="nav-link sidebar-rebuild-link <?= $matchesRoute('/') ? 'active' : '' ?>">
+                        <span class="sidebar-rebuild-icon"><i class="fas fa-th-large"></i></span>
                         <p>لوحة التحكم</p>
                     </a>
                 </li>
 
-                <?php if ($showOperationsMenu): ?>
-                <li class="nav-item has-treeview <?= menuOpenAny($operationsPaths, $current) ?>">
-                    <a href="#" class="nav-link <?= activeAny($operationsPaths, $current) ?>">
-                        <i class="nav-icon fas fa-compass"></i>
-                        <p>عمليات الجدولة <i class="fas fa-angle-left right"></i></p>
-                    </a>
-                    <ul class="nav nav-treeview">
-                        <?php if ($canScheduling): ?>
+                <?php foreach ($visibleSections as $section): ?>
+                    <?php
+                    $sectionPaths = array_map(static fn(array $item): string => $item['path'], $section['items']);
+                    $sectionOpen = $matchesAny($sectionPaths);
+                    ?>
+                    <li class="nav-header sidebar-rebuild-header"><?= e($section['header']) ?></li>
+                    <li class="nav-item has-treeview <?= $sectionOpen ? 'menu-open' : '' ?>">
+                        <a href="#" class="nav-link sidebar-rebuild-link sidebar-rebuild-parent <?= $sectionOpen ? 'active' : '' ?>">
+                            <span class="sidebar-rebuild-icon"><i class="<?= e($section['icon']) ?>"></i></span>
+                            <p>
+                                <?= e($section['title']) ?>
+                                <i class="right fas fa-angle-left"></i>
+                            </p>
+                        </a>
+
+                        <ul class="nav nav-treeview sidebar-rebuild-tree">
+                            <?php foreach ($section['items'] as $item): ?>
+                                <li class="nav-item">
+                                    <a href="<?= url($item['path']) ?>" class="nav-link sidebar-rebuild-link <?= $matchesRoute($item['path']) ? 'active' : '' ?>">
+                                        <span class="sidebar-rebuild-icon"><i class="<?= e($item['icon']) ?>"></i></span>
+                                        <p><?= e($item['label']) ?></p>
+                                    </a>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
+                    </li>
+                <?php endforeach; ?>
+
+                <?php if (!empty($visibleAccountLinks)): ?>
+                    <li class="nav-header sidebar-rebuild-header">الحساب</li>
+                    <?php foreach ($visibleAccountLinks as $link): ?>
+                        <?php $linkClass = $link['class'] ?? ''; ?>
                         <li class="nav-item">
-                            <a href="<?= url('/scheduling') ?>" class="nav-link <?= isActive('/scheduling', $current) ?>">
-                                <i class="far fa-circle nav-icon"></i> <p>الجدولة</p>
+                            <a href="<?= url($link['path']) ?>" class="nav-link sidebar-rebuild-link <?= $matchesRoute($link['path']) ? 'active' : '' ?> <?= e($linkClass) ?>">
+                                <span class="sidebar-rebuild-icon"><i class="<?= e($link['icon']) ?>"></i></span>
+                                <p><?= e($link['label']) ?></p>
                             </a>
                         </li>
-                        <?php endif; ?>
-                        <?php if ($canTimetable): ?>
-                        <li class="nav-item">
-                            <a href="<?= url('/timetable') ?>" class="nav-link <?= isActive('/timetable', $current) ?>">
-                                <i class="far fa-circle nav-icon"></i> <p>الجدول الدراسي</p>
-                            </a>
-                        </li>
-                        <?php endif; ?>
-                    </ul>
-                </li>
+                    <?php endforeach; ?>
                 <?php endif; ?>
 
-                <?php if ($showTeachingMenu): ?>
-                <li class="nav-header">التدريس والمقررات</li>
-                <li class="nav-item has-treeview <?= menuOpenAny($teachingPaths, $current) ?>">
-                    <a href="#" class="nav-link <?= activeAny($teachingPaths, $current) ?>">
-                        <i class="nav-icon fas fa-chalkboard-teacher"></i>
-                        <p>إدارة التدريس <i class="fas fa-angle-left right"></i></p>
-                    </a>
-                    <ul class="nav nav-treeview">
-                        <?php if ($canMembers): ?>
-                        <li class="nav-item">
-                            <a href="<?= url('/members') ?>" class="nav-link <?= isActive('/members', $current) ?>">
-                                <i class="far fa-circle nav-icon"></i> <p>أعضاء هيئة التدريس</p>
-                            </a>
-                        </li>
-                        <?php endif; ?>
-                        <?php if ($canSubjects): ?>
-                        <li class="nav-item">
-                            <a href="<?= url('/subjects') ?>" class="nav-link <?= isActive('/subjects', $current) ?>">
-                                <i class="far fa-circle nav-icon"></i> <p>المقررات</p>
-                            </a>
-                        </li>
-                        <?php endif; ?>
-                        <?php if ($canMemberCourses): ?>
-                        <li class="nav-item">
-                            <a href="<?= url('/member-courses') ?>" class="nav-link <?= isActive('/member-courses', $current) ?>">
-                                <i class="far fa-circle nav-icon"></i> <p>تكليفات التدريس</p>
-                            </a>
-                        </li>
-                        <?php endif; ?>
-                    </ul>
-                </li>
+                <?php if (empty($visibleSections) && empty($visibleAccountLinks)): ?>
+                    <li class="nav-item">
+                        <span class="nav-link sidebar-rebuild-empty">
+                            <span class="sidebar-rebuild-icon"><i class="fas fa-info-circle"></i></span>
+                            <p>لا توجد صفحات متاحة حالياً لهذا الحساب</p>
+                        </span>
+                    </li>
                 <?php endif; ?>
-
-                <?php if ($showStructureMenu): ?>
-                <li class="nav-header">الهيكل الأكاديمي</li>
-                <li class="nav-item has-treeview <?= menuOpenAny($structurePaths, $current) ?>">
-                    <a href="#" class="nav-link <?= activeAny($structurePaths, $current) ?>">
-                        <i class="nav-icon fas fa-sitemap"></i>
-                        <p>المكونات الأكاديمية <i class="fas fa-angle-left right"></i></p>
-                    </a>
-                    <ul class="nav nav-treeview">
-                        <?php if ($canAcademicYears): ?>
-                        <li class="nav-item">
-                            <a href="<?= url('/academic-years') ?>" class="nav-link <?= isActive('/academic-years', $current) ?>">
-                                <i class="far fa-circle nav-icon"></i> <p>السنوات الأكاديمية</p>
-                            </a>
-                        </li>
-                        <?php endif; ?>
-                        <?php if ($canSemesters): ?>
-                        <li class="nav-item">
-                            <a href="<?= url('/semesters') ?>" class="nav-link <?= isActive('/semesters', $current) ?>">
-                                <i class="far fa-circle nav-icon"></i> <p>الفصول الدراسية</p>
-                            </a>
-                        </li>
-                        <?php endif; ?>
-                        <?php if ($canDepartments): ?>
-                        <li class="nav-item">
-                            <a href="<?= url('/departments') ?>" class="nav-link <?= isActive('/departments', $current) ?>">
-                                <i class="far fa-circle nav-icon"></i> <p>الأقسام</p>
-                            </a>
-                        </li>
-                        <?php endif; ?>
-                        <?php if ($canLevels): ?>
-                        <li class="nav-item">
-                            <a href="<?= url('/levels') ?>" class="nav-link <?= isActive('/levels', $current) ?>">
-                                <i class="far fa-circle nav-icon"></i> <p>الفرق</p>
-                            </a>
-                        </li>
-                        <?php endif; ?>
-                        <?php if ($canDivisions): ?>
-                        <li class="nav-item">
-                            <a href="<?= url('/divisions') ?>" class="nav-link <?= isActive('/divisions', $current) ?>">
-                                <i class="far fa-circle nav-icon"></i> <p>الشُعب</p>
-                            </a>
-                        </li>
-                        <?php endif; ?>
-                        <?php if ($canSections): ?>
-                        <li class="nav-item">
-                            <a href="<?= url('/sections') ?>" class="nav-link <?= isActive('/sections', $current) ?>">
-                                <i class="far fa-circle nav-icon"></i> <p>السكاشن</p>
-                            </a>
-                        </li>
-                        <?php endif; ?>
-                    </ul>
-                </li>
-                <?php endif; ?>
-
-                <?php if ($showResourcesMenu): ?>
-                <li class="nav-header">الموارد</li>
-                <li class="nav-item has-treeview <?= menuOpenAny($resourcesPaths, $current) ?>">
-                    <a href="#" class="nav-link <?= activeAny($resourcesPaths, $current) ?>">
-                        <i class="nav-icon fas fa-boxes"></i>
-                        <p>القاعات والفترات <i class="fas fa-angle-left right"></i></p>
-                    </a>
-                    <ul class="nav nav-treeview">
-                        <?php if ($canClassrooms): ?>
-                        <li class="nav-item">
-                            <a href="<?= url('/classrooms') ?>" class="nav-link <?= isActive('/classrooms', $current) ?>">
-                                <i class="far fa-circle nav-icon"></i> <p>القاعات</p>
-                            </a>
-                        </li>
-                        <?php endif; ?>
-                        <?php if ($canSessions): ?>
-                        <li class="nav-item">
-                            <a href="<?= url('/sessions') ?>" class="nav-link <?= isActive('/sessions', $current) ?>">
-                                <i class="far fa-circle nav-icon"></i> <p>الفترات الزمنية</p>
-                            </a>
-                        </li>
-                        <?php endif; ?>
-                    </ul>
-                </li>
-                <?php endif; ?>
-
-                <?php if ($showSystemMenu): ?>
-                <li class="nav-header">إدارة النظام</li>
-                <li class="nav-item has-treeview <?= menuOpenAny($systemPaths, $current) ?>">
-                    <a href="#" class="nav-link <?= activeAny($systemPaths, $current) ?>">
-                        <i class="nav-icon fas fa-cogs"></i>
-                        <p>الضبط والمتابعة <i class="fas fa-angle-left right"></i></p>
-                    </a>
-                    <ul class="nav nav-treeview">
-                        <?php if ($canNotifications): ?>
-                        <li class="nav-item">
-                            <a href="<?= url('/notifications') ?>" class="nav-link <?= isActive('/notifications', $current) ?>">
-                                <i class="far fa-circle nav-icon"></i> <p>الإشعارات</p>
-                            </a>
-                        </li>
-                        <?php endif; ?>
-                        <?php if ($canUsers): ?>
-                        <li class="nav-item">
-                            <a href="<?= url('/users') ?>" class="nav-link <?= isActive('/users', $current) ?>">
-                                <i class="far fa-circle nav-icon"></i> <p>المستخدمون</p>
-                            </a>
-                        </li>
-                        <?php endif; ?>
-                        <?php if ($canAudit): ?>
-                        <li class="nav-item">
-                            <a href="<?= url('/audit-logs') ?>" class="nav-link <?= isActive('/audit-logs', $current) ?>">
-                                <i class="far fa-circle nav-icon"></i> <p>سجل المراجعة</p>
-                            </a>
-                        </li>
-                        <?php endif; ?>
-                        <?php if ($canSettings): ?>
-                        <li class="nav-item">
-                            <a href="<?= url('/settings') ?>" class="nav-link <?= isActive('/settings', $current) ?>">
-                                <i class="far fa-circle nav-icon"></i> <p>الإعدادات</p>
-                            </a>
-                        </li>
-                        <?php endif; ?>
-                        <?php if ($canBackup): ?>
-                        <li class="nav-item">
-                            <a href="<?= url('/backups') ?>" class="nav-link <?= isActive('/backups', $current) ?>">
-                                <i class="far fa-circle nav-icon"></i> <p>النسخ الاحتياطي</p>
-                            </a>
-                        </li>
-                        <?php endif; ?>
-                    </ul>
-                </li>
-                <?php endif; ?>
-
-                <li class="nav-header">الحساب</li>
-                <li class="nav-item">
-                    <a href="<?= url('/profile') ?>" class="nav-link <?= isActive('/profile', $current) ?>">
-                        <i class="nav-icon fas fa-id-badge"></i>
-                        <p>الملف الشخصي</p>
-                    </a>
-                </li>
-
             </ul>
         </nav>
     </div>
