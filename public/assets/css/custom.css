@@ -56,18 +56,28 @@ body {
     transition: margin-right .3s ease-in-out;
 }
 
-/* Desktop: when collapsed, hide sidebar and expand content */
-.sidebar-collapse .main-sidebar,
-.sidebar-collapse .main-sidebar::before {
-    margin-right: calc(-1 * var(--sidebar-width)) !important;
-    margin-left: 0 !important;
-}
+/* Desktop: when collapsed, use mini sidebar width */
+@media (min-width: 992px) {
+    .sidebar-mini.sidebar-collapse .main-sidebar,
+    .sidebar-mini.sidebar-collapse .main-sidebar::before {
+        margin-right: 0 !important;
+        width: 4.6rem !important;
+    }
 
-.sidebar-collapse .content-wrapper,
-.sidebar-collapse .main-header,
-.sidebar-collapse .main-footer {
-    margin-right: 0 !important;
-    margin-left: 0 !important;
+    .sidebar-mini.sidebar-collapse .content-wrapper,
+    .sidebar-mini.sidebar-collapse .main-header,
+    .sidebar-mini.sidebar-collapse .main-footer {
+        margin-right: 4.6rem !important;
+        margin-left: 0 !important;
+    }
+
+    .sidebar-mini.sidebar-collapse .brand-text,
+    .sidebar-mini.sidebar-collapse .user-panel .info,
+    .sidebar-mini.sidebar-collapse .nav-sidebar .nav-link p,
+    .sidebar-mini.sidebar-collapse .nav-treeview,
+    .sidebar-mini.sidebar-collapse .nav-sidebar .nav-header {
+        display: none !important;
+    }
 }
 
 /* Mobile behavior */
@@ -572,15 +582,26 @@ body.app-modern-theme .main-sidebar::before {
     width: var(--sidebar-width);
 }
 
-body.app-modern-theme.sidebar-collapse .main-sidebar,
-body.app-modern-theme.sidebar-collapse .main-sidebar::before {
-    margin-right: calc(-1 * var(--sidebar-width)) !important;
-}
+@media (min-width: 992px) {
+    body.app-modern-theme.sidebar-mini.sidebar-collapse .main-sidebar,
+    body.app-modern-theme.sidebar-mini.sidebar-collapse .main-sidebar::before {
+        margin-right: 0 !important;
+        width: 4.6rem !important;
+    }
 
-body.app-modern-theme.sidebar-collapse .main-header,
-body.app-modern-theme.sidebar-collapse .main-footer,
-body.app-modern-theme.sidebar-collapse .content-wrapper {
-    margin-right: 0 !important;
+    body.app-modern-theme.sidebar-mini.sidebar-collapse .main-header,
+    body.app-modern-theme.sidebar-mini.sidebar-collapse .main-footer,
+    body.app-modern-theme.sidebar-mini.sidebar-collapse .content-wrapper {
+        margin-right: 4.6rem !important;
+    }
+
+    body.app-modern-theme.sidebar-mini.sidebar-collapse .brand-text,
+    body.app-modern-theme.sidebar-mini.sidebar-collapse .user-panel .info,
+    body.app-modern-theme.sidebar-mini.sidebar-collapse .nav-sidebar .nav-link p,
+    body.app-modern-theme.sidebar-mini.sidebar-collapse .nav-treeview,
+    body.app-modern-theme.sidebar-mini.sidebar-collapse .nav-sidebar .nav-header {
+        display: none !important;
+    }
 }
 
 body.app-modern-theme .content-wrapper {
@@ -593,7 +614,7 @@ body.app-modern-theme .content-wrapper {
 body.app-modern-theme .content-wrapper::before,
 body.app-modern-theme .content-wrapper::after {
     content: '';
-    position: absolute;
+    position: fixed;
     border-radius: 50%;
     pointer-events: none;
     z-index: 0;
@@ -1118,15 +1139,29 @@ html[dir="rtl"] body.app-modern-theme.sidebar-collapse .main-header.navbar {
     margin-left: 0.85rem !important;
 }
 
+/* Fix mini sidebar for RTL in desktop */
+@media (min-width: 992px) {
+    html[dir="rtl"] body.app-modern-theme.sidebar-mini.sidebar-collapse .content-wrapper,
+    html[dir="rtl"] body.app-modern-theme.sidebar-mini.sidebar-collapse .main-footer {
+        margin-right: 4.6rem !important;
+        margin-left: 0 !important;
+    }
+
+    html[dir="rtl"] body.app-modern-theme.sidebar-mini.sidebar-collapse .main-header.navbar {
+        margin-right: calc(4.6rem + 0.85rem) !important;
+        margin-left: 0.85rem !important;
+    }
+}
+
 html[dir="rtl"] body.app-modern-theme .brand-link {
     min-height: 66px;
     gap: 0.65rem;
     align-items: center;
     overflow: visible;
     white-space: normal;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.14);
-    background: linear-gradient(180deg, rgba(10, 34, 52, 0.58), rgba(15, 52, 76, 0.34));
-    box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.06);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    background: transparent;
+    box-shadow: none;
 }
 
 html[dir="rtl"] body.app-modern-theme .brand-link .brand-text {
