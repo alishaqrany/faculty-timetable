@@ -128,6 +128,13 @@ foreach ($sectionBlueprint as $section) {
     }
 }
 
+$visibleSectionPaths = [];
+foreach ($visibleSections as $section) {
+    foreach ($section['items'] as $item) {
+        $visibleSectionPaths[$item['path']] = true;
+    }
+}
+
 $accountLinks = [
     ['label' => 'الملف الشخصي', 'path' => '/profile', 'icon' => 'fas fa-id-card'],
     ['label' => 'الإعدادات', 'path' => '/settings', 'icon' => 'fas fa-cog', 'permission' => 'settings'],
@@ -140,13 +147,13 @@ foreach ($accountLinks as $link) {
     if ($permissionKey && empty($permissions[$permissionKey])) {
         continue;
     }
+
+    if (isset($visibleSectionPaths[$link['path']])) {
+        continue;
+    }
+
     $visibleAccountLinks[] = $link;
 }
-
-$username = trim((string) ($auth['username'] ?? 'مستخدم'));
-$initial = function_exists('mb_substr')
-    ? mb_substr($username, 0, 1, 'UTF-8')
-    : substr($username, 0, 1);
 ?>
 <aside class="main-sidebar sidebar-rebuild-v3 elevation-0">
     <a href="<?= url('/') ?>" class="brand-link sidebar-rebuild-brand">
@@ -155,19 +162,10 @@ $initial = function_exists('mb_substr')
         </span>
         <span class="sidebar-rebuild-brand-text">
             <strong><?= e(config('app.name', 'نظام الجداول')) ?></strong>
-            <small>نظام ملاحة جديد</small>
         </span>
     </a>
 
     <div class="sidebar sidebar-rebuild-scroll">
-        <div class="sidebar-rebuild-profile">
-            <span class="sidebar-rebuild-avatar"><?= e($initial) ?></span>
-            <div class="sidebar-rebuild-user">
-                <a href="<?= url('/profile') ?>"><?= e($username) ?></a>
-                <span>جلسة عمل نشطة</span>
-            </div>
-        </div>
-
         <nav class="sidebar-rebuild-nav mt-2">
             <ul class="nav nav-sidebar nav-child-indent flex-column" data-widget="treeview" data-accordion="false" role="menu">
                 <li class="nav-item">

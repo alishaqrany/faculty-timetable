@@ -32,7 +32,7 @@
     <link rel="stylesheet" href="<?= url('/assets/css/custom.css') ?>">
     <?php $this->yield('styles'); ?>
 </head>
-<body class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed app-modern-theme">
+<body class="hold-transition layout-fixed layout-navbar-fixed app-modern-theme">
 <div class="wrapper">
 
     <!-- Navbar -->

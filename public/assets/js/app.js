@@ -26,10 +26,6 @@
 
     // ── Init on DOM Ready ────────────────────────────────────────
     $(function () {
-        if (window.matchMedia('(max-width: 991.98px)').matches) {
-            $('body').addClass('sidebar-collapse').removeClass('sidebar-open');
-        }
-
         // Auto-init DataTables and Select2
         $('.data-table').each(function () {
             if (!$.fn.DataTable.isDataTable(this)) {
@@ -64,14 +60,6 @@
                     dropdownParent: $modal
                 });
             });
-        });
-
-        // On mobile, close sidebar after selecting a real navigation link.
-        $(document).on('click', '.nav-sidebar .nav-link', function () {
-            var href = $(this).attr('href') || '';
-            if (window.matchMedia('(max-width: 991.98px)').matches && href !== '#' && href !== '') {
-                $('body').removeClass('sidebar-open').addClass('sidebar-collapse');
-            }
         });
 
         // SweetAlert delete confirmation
