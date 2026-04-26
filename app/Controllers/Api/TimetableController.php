@@ -36,11 +36,13 @@ class TimetableController extends \Controller
     {
         $db = \Database::getInstance();
         $members = $db->fetchAll(
-            "SELECT m.id, m.name, m.academic_degree, d.name as department_name
-             FROM members m
-             LEFT JOIN departments d ON m.department_id = d.id
-             WHERE m.is_active = 1
-             ORDER BY m.name"
+            "SELECT fm.member_id AS id, fm.member_name AS name, ad.degree_name AS academic_degree,
+                    d.department_name
+             FROM faculty_members fm
+             LEFT JOIN academic_degrees ad ON fm.degree_id = ad.id
+             LEFT JOIN departments d ON fm.department_id = d.department_id
+             WHERE fm.is_active = 1
+             ORDER BY fm.member_name"
         );
         $this->json(['data' => $members, 'count' => count($members)]);
     }
@@ -55,11 +57,12 @@ class TimetableController extends \Controller
     {
         $db = \Database::getInstance();
         $subjects = $db->fetchAll(
-            "SELECT s.id, s.name, s.code, d.name as department_name
+            "SELECT s.subject_id AS id, s.subject_name AS name, s.subject_code AS code,
+                    d.department_name
              FROM subjects s
-             LEFT JOIN departments d ON s.department_id = d.id
+             LEFT JOIN departments d ON s.department_id = d.department_id
              WHERE s.is_active = 1
-             ORDER BY s.name"
+             ORDER BY s.subject_name"
         );
         $this->json(['data' => $subjects, 'count' => count($subjects)]);
     }
@@ -68,12 +71,13 @@ class TimetableController extends \Controller
     {
         $db = \Database::getInstance();
         $sections = $db->fetchAll(
-            "SELECT s.id, s.name, d.name as department_name, l.name as level_name
+            "SELECT s.section_id AS id, s.section_name AS name,
+                    d.department_name, l.level_name
              FROM sections s
-             LEFT JOIN departments d ON s.department_id = d.id
-             LEFT JOIN levels l ON s.level_id = l.id
+             LEFT JOIN departments d ON s.department_id = d.department_id
+             LEFT JOIN levels l ON s.level_id = l.level_id
              WHERE s.is_active = 1
-             ORDER BY s.name"
+             ORDER BY s.section_name"
         );
         $this->json(['data' => $sections, 'count' => count($sections)]);
     }

@@ -68,16 +68,28 @@ class UserController extends \Controller
         $user = User::find((int)$id);
         if (!$user) $this->redirect('/users', 'المستخدم غير موجود', 'error');
 
+        $validated = $this->request->validate([
+            'username'  => 'required|max:100|unique:users,username,' . (int)$id . ',id',
+            'email'     => 'email|max:200',
+            'role_id'   => 'required|integer',
+            'is_active' => 'in:0,1',
+            'member_id' => 'integer',
+        ]);
+        if ($validated === false) $this->redirect("/users/{$id}/edit", 'يرجى تصحيح الأخطاء', 'error');
+
         $data = [
-            'username'  => trim($this->request->input('username', '')),
-            'email'     => trim($this->request->input('email', '')),
-            'role_id'   => (int)$this->request->input('role_id'),
-            'is_active' => (int)$this->request->input('is_active', 1),
-            'member_id' => $this->request->input('member_id') ?: null,
+            'username'  => trim((string)$validated['username']),
+            'email'     => trim((string)($validated['email'] ?? '')),
+            'role_id'   => (int)$validated['role_id'],
+            'is_active' => (int)($validated['is_active'] ?? 1),
+            'member_id' => $this->request->input('member_id') === '' ? null : (int)$this->request->input('member_id'),
         ];
 
         $newPassword = $this->request->input('password', '');
         if ($newPassword !== '') {
+            if (mb_strlen($newPassword) < 6) {
+                $this->redirect("/users/{$id}/edit", 'كلمة المرور يجب أن تكون 6 أحرف على الأقل', 'error');
+            }
             $data['password'] = password_hash($newPassword, PASSWORD_DEFAULT);
         }
 

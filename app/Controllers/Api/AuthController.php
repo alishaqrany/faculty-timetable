@@ -27,11 +27,12 @@ class AuthController extends \Controller
 
         // Generate API token
         $token = bin2hex(random_bytes(32));
+        $tokenHash = hash('sha256', $token);
         $expiresAt = date('Y-m-d H:i:s', strtotime('+30 days'));
 
         \Database::getInstance()->insert('api_tokens', [
             'user_id'    => $user['id'],
-            'token'      => $token,
+            'token'      => $tokenHash,
             'name'       => 'api_login',
             'expires_at' => $expiresAt,
         ]);

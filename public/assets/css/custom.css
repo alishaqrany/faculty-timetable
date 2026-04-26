@@ -1260,3 +1260,86 @@ html[dir="rtl"] body.app-modern-theme .table-bordered td {
     }
 }
 
+/* ===== Targeted UI Stabilization Fixes ===== */
+body.app-modern-theme .main-sidebar.sidebar-rebuild-v3 {
+    display: flex;
+    flex-direction: column;
+}
+
+body.app-modern-theme.layout-navbar-fixed .main-sidebar.sidebar-rebuild-v3 .sidebar-rebuild-brand {
+    position: relative !important;
+    top: auto !important;
+    width: 100% !important;
+}
+
+body.app-modern-theme .main-sidebar.sidebar-rebuild-v3 .sidebar {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: auto !important;
+    max-height: none !important;
+    margin-top: 0 !important;
+    overflow-y: auto;
+}
+
+body.app-modern-theme .sidebar-rebuild-nav .nav-sidebar {
+    margin-top: 0.5rem;
+}
+
+body.app-modern-theme .sidebar-rebuild-link > p {
+    position: relative;
+    padding-left: 1.45rem;
+    display: block;
+}
+
+body.app-modern-theme .sidebar-rebuild-link > p > .right {
+    right: auto;
+    left: 0.85rem;
+    top: 50%;
+    margin-left: 0;
+    transform: translateY(-50%);
+}
+
+body.app-modern-theme .sidebar-rebuild-v3 .nav-sidebar .menu-is-opening > .nav-link i.right,
+body.app-modern-theme .sidebar-rebuild-v3 .nav-sidebar .menu-is-opening > .nav-link svg.right,
+body.app-modern-theme .sidebar-rebuild-v3 .nav-sidebar .menu-open > .nav-link i.right,
+body.app-modern-theme .sidebar-rebuild-v3 .nav-sidebar .menu-open > .nav-link svg.right {
+    transform: translateY(-50%) rotate(-90deg);
+}
+
+body.app-modern-theme .select2-container--bootstrap4 .select2-selection--single {
+    display: flex;
+    align-items: center;
+}
+
+body.app-modern-theme .select2-container--bootstrap4 .select2-selection--single .select2-selection__rendered {
+    line-height: 1.35;
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+body.app-modern-theme .select2-container--bootstrap4 .select2-selection--single .select2-selection__arrow {
+    top: 0 !important;
+    height: 100% !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+body.app-modern-theme .select2-container--bootstrap4 .select2-selection--single .select2-selection__arrow b {
+    position: static;
+    margin: 0;
+}
+
+html[dir="rtl"] body.app-modern-theme .content .container-fluid > .row > .col-md-8:only-child {
+    margin-right: auto;
+    margin-left: auto;
+    float: none;
+}
+
+html[dir="rtl"] body.app-modern-theme .sidebar-rebuild-v3 .sidebar-rebuild-link > p > .right {
+    right: auto;
+    left: 0.85rem;
+    top: 50%;
+    transform: translateY(-50%);
+}
+

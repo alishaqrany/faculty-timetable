@@ -120,7 +120,8 @@ class BackupController extends \Controller
             AuditService::log('UPDATE', 'backup', null, null, ['action' => 'restore', 'filename' => $filename]);
             $this->redirect('/backups', 'تم استعادة النسخة الاحتياطية بنجاح ✓');
         } else {
-            $this->redirect('/backups', 'فشل الاستعادة: ' . ($result['error'] ?? ''), 'error');
+            error_log('Backup restore failed: ' . ($result['error'] ?? 'unknown'));
+            $this->redirect('/backups', 'فشل الاستعادة. تحقق من صيغة الملف وسجلات النظام.', 'error');
         }
     }
 
@@ -312,7 +313,8 @@ class BackupController extends \Controller
             return;
         }
         
-        $authUrl = GoogleDriveService::getAuthUrl();
+        $state = GoogleDriveService::generateOAuthState();
+        $authUrl = GoogleDriveService::getAuthUrl($state);
         header('Location: ' . $authUrl);
         exit;
     }
@@ -323,6 +325,12 @@ class BackupController extends \Controller
     public function googleDriveCallback(): void
     {
         $code = $this->request->input('code', '');
+        $state = $this->request->input('state', '');
+
+        if (!GoogleDriveService::validateOAuthState($state)) {
+            $this->redirect('/backups/cloud-settings', 'فشل المصادقة مع Google Drive', 'error');
+            return;
+        }
         
         if (empty($code)) {
             $this->redirect('/backups/cloud-settings', 'فشل المصادقة مع Google Drive', 'error');
@@ -335,7 +343,8 @@ class BackupController extends \Controller
             AuditService::log('UPDATE', 'google_drive_auth');
             $this->redirect('/backups/cloud-settings', 'تم ربط Google Drive بنجاح ✓');
         } else {
-            $this->redirect('/backups/cloud-settings', 'فشل المصادقة: ' . ($result['error'] ?? ''), 'error');
+            error_log('Google Drive auth failed: ' . ($result['error'] ?? 'unknown'));
+            $this->redirect('/backups/cloud-settings', 'فشل المصادقة مع Google Drive', 'error');
         }
     }
 
@@ -420,7 +429,8 @@ class BackupController extends \Controller
             AuditService::log('CREATE', 'backup', null, null, ['action' => 'download_from_cloud', 'service' => $service, 'filename' => $filename]);
             $this->redirect('/backups', 'تم تنزيل الملف بنجاح ✓');
         } else {
-            $this->redirect('/backups', 'فشل التنزيل: ' . ($result['error'] ?? ''), 'error');
+            error_log('Backup cloud download failed: ' . ($result['error'] ?? 'unknown'));
+            $this->redirect('/backups', 'فشل تنزيل الملف من السحابة. تحقق من الاتصال والإعدادات.', 'error');
         }
     }
 }

@@ -50,7 +50,8 @@ class DataTransferController extends \Controller
             AuditService::log('UPDATE', 'data_transfer');
             $this->redirect('/settings', 'تم استيراد بيانات SQL بنجاح ✓');
         } catch (\Throwable $e) {
-            $this->redirect('/settings', 'فشل استيراد SQL: ' . $e->getMessage(), 'error');
+            error_log('DataTransfer importSql failed: ' . $e->getMessage());
+            $this->redirect('/settings', 'فشل استيراد SQL. راجع سجل النظام للتحقق من التفاصيل.', 'error');
         }
     }
 
@@ -84,7 +85,8 @@ class DataTransferController extends \Controller
             $rowsCount = (int)($result['rows'] ?? 0);
             $this->redirect('/settings', "تم استيراد ملف Excel بنجاح ✓ (الجداول: {$tablesCount}، الصفوف: {$rowsCount})");
         } catch (\Throwable $e) {
-            $this->redirect('/settings', 'فشل استيراد Excel: ' . $e->getMessage(), 'error');
+            error_log('DataTransfer importExcel failed: ' . $e->getMessage());
+            $this->redirect('/settings', 'فشل استيراد Excel. راجع سجل النظام للتحقق من التفاصيل.', 'error');
         }
     }
 

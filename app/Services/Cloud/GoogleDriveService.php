@@ -46,7 +46,7 @@ class GoogleDriveService
     /**
      * الحصول على رابط المصادقة
      */
-    public static function getAuthUrl(): string
+    public static function getAuthUrl(?string $state = null): string
     {
         $config = self::loadConfig();
         
@@ -58,8 +58,31 @@ class GoogleDriveService
             'access_type' => 'offline',
             'prompt' => 'consent',
         ];
+
+        if ($state !== null && $state !== '') {
+            $params['state'] = $state;
+        }
         
         return self::AUTH_URL . '?' . http_build_query($params);
+    }
+
+    public static function generateOAuthState(): string
+    {
+        $state = bin2hex(random_bytes(16));
+        $_SESSION['google_drive_oauth_state'] = $state;
+        return $state;
+    }
+
+    public static function validateOAuthState(?string $state): bool
+    {
+        $expected = $_SESSION['google_drive_oauth_state'] ?? null;
+        unset($_SESSION['google_drive_oauth_state']);
+
+        if (!is_string($state) || $state === '' || !is_string($expected) || $expected === '') {
+            return false;
+        }
+
+        return hash_equals($expected, $state);
     }
 
     /**

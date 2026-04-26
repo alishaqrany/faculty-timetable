@@ -47,7 +47,7 @@ class MemberController extends \Controller
 
         // Auto-create user account
         $username = 'user' . $memberId;
-        $password = bin2hex(random_bytes(3)); // 6-char hex password
+        $password = bin2hex(random_bytes(8)); // 16-char hex password
         $facultyRoleId = \Database::getInstance()->fetchColumn("SELECT id FROM roles WHERE role_slug = 'faculty'");
 
         $userId = User::create([

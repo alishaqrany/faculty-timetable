@@ -14,6 +14,16 @@ use App\Services\{SchedulingService, AuditService, NotificationService};
 
 class SchedulingController extends \Controller
 {
+    private function canManageEntry(int $timetableId): ?array
+    {
+        return \Database::getInstance()->fetch(
+            "SELECT t.*, mc.member_id FROM timetable t
+             JOIN member_courses mc ON t.member_course_id = mc.member_course_id
+             WHERE t.timetable_id = ?",
+            [$timetableId]
+        );
+    }
+
     public function index(): void
     {
         $this->authorize('scheduling.view');
@@ -123,8 +133,14 @@ class SchedulingController extends \Controller
         $this->authorize('scheduling.manage');
         $this->validateCsrf();
 
-        $entry = Timetable::find((int)$id);
+        $entry = $this->canManageEntry((int)$id);
         if (!$entry) $this->redirect('/scheduling', 'الإدخال غير موجود', 'error');
+
+        $user = $this->authUser();
+        $isAdmin = ($user['role_slug'] ?? '') === 'admin';
+        if (!$isAdmin && (int)$entry['member_id'] !== (int)$this->session->memberId()) {
+            $this->redirect('/scheduling', 'غير مسموح', 'error');
+        }
 
         $data = $this->request->validate([
             'member_course_id' => 'required|integer',
@@ -132,6 +148,13 @@ class SchedulingController extends \Controller
             'session_id'       => 'required|integer',
         ]);
         if ($data === false) $this->redirect("/scheduling/{$id}/edit", 'يرجى تصحيح الأخطاء', 'error');
+
+        if (!$isAdmin) {
+            $mc = MemberCourse::find((int)$data['member_course_id']);
+            if (!$mc || (int)$mc['member_id'] !== (int)$this->session->memberId()) {
+                $this->redirect('/scheduling', 'غير مسموح: هذا التكليف لا يخصك', 'error');
+            }
+        }
 
         // Check conflicts (excluding current entry)
         $conflicts = SchedulingService::checkConflicts(
@@ -157,8 +180,13 @@ class SchedulingController extends \Controller
         $this->authorize('scheduling.manage');
         $this->validateCsrf();
 
-        $entry = Timetable::find((int)$id);
+        $entry = $this->canManageEntry((int)$id);
         if (!$entry) $this->redirect('/scheduling', 'الإدخال غير موجود', 'error');
+
+        $user = $this->authUser();
+        if (($user['role_slug'] ?? '') !== 'admin' && (int)$entry['member_id'] !== (int)$this->session->memberId()) {
+            $this->redirect('/scheduling', 'غير مسموح', 'error');
+        }
 
         Timetable::destroy((int)$id);
         AuditService::log('DELETE', 'timetable', (int)$id, $entry);
