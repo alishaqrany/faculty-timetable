@@ -6,11 +6,12 @@ require_once APP_ROOT . '/app/Models/MemberCourse.php';
 require_once APP_ROOT . '/app/Models/Classroom.php';
 require_once APP_ROOT . '/app/Models/Session.php';
 require_once APP_ROOT . '/app/Services/SchedulingService.php';
+require_once APP_ROOT . '/app/Services/PriorityService.php';
 require_once APP_ROOT . '/app/Services/AuditService.php';
 require_once APP_ROOT . '/app/Services/NotificationService.php';
 
 use App\Models\{Timetable, MemberCourse, Classroom, Session};
-use App\Services\{SchedulingService, AuditService, NotificationService};
+use App\Services\{SchedulingService, AuditService, NotificationService, PriorityService};
 
 class SchedulingController extends \Controller
 {
@@ -30,13 +31,13 @@ class SchedulingController extends \Controller
 
         $user = $this->authUser();
         $memberId = $this->session->memberId();
+        $isAdmin = ($user['role_slug'] ?? '') === 'admin';
 
-        // Check if user has scheduling turn
-        $userRecord = \Database::getInstance()->fetch(
-            "SELECT registration_status FROM users WHERE id = ?",
-            [$this->session->userId()]
-        );
-        $canSchedule = ($userRecord['registration_status'] ?? 0) == 1;
+        // Check if user can schedule via priority system
+        $canSchedule = $isAdmin || ($memberId && PriorityService::canMemberRegister($memberId));
+
+        // Get priority state for the view
+        $priorityState = PriorityService::getCurrentState();
 
         // Get user's courses
         $myCourses = $memberId ? MemberCourse::forMember($memberId) : [];
@@ -50,11 +51,13 @@ class SchedulingController extends \Controller
         }
 
         $this->render('scheduling.index', [
-            'canSchedule' => $canSchedule,
-            'myCourses'   => $myCourses,
-            'classrooms'  => $classrooms,
-            'sessions'    => $sessions,
-            'myEntries'   => $myEntries,
+            'canSchedule'   => $canSchedule,
+            'myCourses'     => $myCourses,
+            'classrooms'    => $classrooms,
+            'sessions'      => $sessions,
+            'myEntries'     => $myEntries,
+            'priorityState' => $priorityState,
+            'isAdmin'       => $isAdmin,
         ]);
     }
 
@@ -70,9 +73,18 @@ class SchedulingController extends \Controller
         ]);
         if ($data === false) $this->redirect('/scheduling', 'يرجى تصحيح الأخطاء', 'error');
 
+        $memberId = $this->session->memberId();
+        $user = $this->authUser();
+        $isAdmin = ($user['role_slug'] ?? '') === 'admin';
+
+        // Backend priority check — prevent bypass via direct POST
+        if (!$isAdmin && $memberId && !PriorityService::canMemberRegister($memberId)) {
+            $this->redirect('/scheduling', 'ليس دورك حالياً في نظام الأولوية. لا يمكنك التسجيل الآن.', 'error');
+        }
+
         // Verify ownership
         $mc = MemberCourse::find((int)$data['member_course_id']);
-        if (!$mc || $mc['member_id'] != $this->session->memberId()) {
+        if (!$mc || $mc['member_id'] != $memberId) {
             $this->redirect('/scheduling', 'غير مسموح: هذا التكليف لا يخصك', 'error');
         }
 
@@ -202,7 +214,18 @@ class SchedulingController extends \Controller
         $memberId = $this->session->memberId();
         if (!$memberId) $this->redirect('/scheduling', 'خطأ في الجلسة', 'error');
 
-        $success = SchedulingService::passRole($memberId);
+        $mode = PriorityService::getMode();
+
+        if ($mode === PriorityService::MODE_DISABLED) {
+            // Legacy mode — use old ranking-based pass
+            $success = SchedulingService::passRole($memberId);
+        } else {
+            // Priority system is active — revoke current user's direct registration
+            // and let admin advance groups/depts from the priority panel
+            PriorityService::revokeDirectRegistration($memberId);
+            $success = true;
+        }
+
         if ($success) {
             AuditService::log('PASS_ROLE', 'scheduling', $memberId);
             $this->redirect('/scheduling', 'تم تمرير الدور بنجاح ✓');

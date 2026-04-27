@@ -44,6 +44,34 @@ $router->group('', ['AuthMiddleware', 'CsrfMiddleware'], function (Router $route
     $router->post('/scheduling/{id}/delete', 'SchedulingController@destroy');
     $router->post('/scheduling/pass-role', 'SchedulingController@passRole');
 
+    // Priority Management
+    $router->get('/priority', 'PriorityController@index');
+    $router->post('/priority/mode', 'PriorityController@updateMode');
+    $router->post('/priority/set-category', 'PriorityController@setActiveCategory');
+    $router->get('/priority/categories', 'PriorityController@categories');
+    $router->post('/priority/categories', 'PriorityController@storeCategory');
+    $router->get('/priority/categories/{id}/edit', 'PriorityController@editCategory');
+    $router->post('/priority/categories/{id}', 'PriorityController@updateCategory');
+    $router->post('/priority/categories/{id}/delete', 'PriorityController@deleteCategory');
+    $router->get('/priority/categories/{id}/groups', 'PriorityController@groups');
+    $router->post('/priority/groups', 'PriorityController@storeGroup');
+    $router->get('/priority/groups/{id}/edit', 'PriorityController@editGroup');
+    $router->post('/priority/groups/{id}', 'PriorityController@updateGroup');
+    $router->post('/priority/groups/{id}/delete', 'PriorityController@deleteGroup');
+    $router->get('/priority/groups/{id}/members', 'PriorityController@groupMembers');
+    $router->post('/priority/groups/{id}/members', 'PriorityController@addGroupMember');
+    $router->post('/priority/group-members/{id}/delete', 'PriorityController@removeGroupMember');
+    $router->get('/priority/exceptions', 'PriorityController@exceptions');
+    $router->post('/priority/exceptions', 'PriorityController@grantException');
+    $router->post('/priority/exceptions/{id}/revoke', 'PriorityController@revokeException');
+    $router->get('/priority/dept-order', 'PriorityController@deptOrder');
+    $router->post('/priority/dept-order', 'PriorityController@saveDeptOrder');
+    $router->post('/priority/advance-group', 'PriorityController@advanceGroup');
+    $router->post('/priority/advance-dept', 'PriorityController@advanceDept');
+    $router->post('/priority/reset', 'PriorityController@resetPriority');
+    $router->post('/priority/grant-register/{id}', 'PriorityController@grantMemberRegister');
+    $router->post('/priority/revoke-register/{id}', 'PriorityController@revokeMemberRegister');
+
     // Timetable
     $router->get('/timetable', 'TimetableController@index');
     $router->get('/timetable/export', 'TimetableController@export');

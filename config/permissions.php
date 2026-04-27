@@ -68,6 +68,12 @@ return [
     'scheduling.manage'      => 'إدارة الجدولة',
     'scheduling.pass_role'   => 'تمرير الدور',
 
+    // Priority Management
+    'priority.view'            => 'عرض إدارة الأولوية',
+    'priority.manage'          => 'إدارة الأولوية',
+    'priority.grant_exception' => 'منح استثناءات الأولوية',
+    'priority.grant_register'  => 'منح صلاحية التسجيل',
+
     // Timetable
     'timetable.view'         => 'عرض الجدول الزمني',
     'timetable.export'       => 'تصدير الجدول',

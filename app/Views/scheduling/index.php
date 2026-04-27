@@ -2,7 +2,31 @@
 $this->layout('layouts.app');
 $__page_title = 'الجدولة';
 $__breadcrumb = [['label' => 'الجدولة']];
+
+$priorityMode = $priorityState['mode'] ?? 'disabled';
+$priorityLabel = $priorityState['mode_label'] ?? 'معطل';
 ?>
+
+<!-- Priority State Info -->
+<?php if ($priorityMode !== 'disabled'): ?>
+<div class="alert alert-info d-flex flex-wrap align-items-center justify-content-between">
+    <div class="mb-2 mb-sm-0">
+        <i class="fas fa-sort-amount-up ml-1"></i>
+        <strong>نظام الأولوية:</strong> <?= e($priorityLabel) ?>
+        <?php if ($priorityState['current_group']): ?>
+            — المجموعة الحالية: <strong><?= e($priorityState['current_group']['group_name']) ?></strong>
+        <?php endif; ?>
+        <?php if ($priorityState['current_department']): ?>
+            — القسم الحالي: <strong><?= e($priorityState['current_department']['department_name']) ?></strong>
+        <?php endif; ?>
+    </div>
+    <?php if ($isAdmin): ?>
+    <a href="<?= url('/priority') ?>" class="btn btn-outline-info btn-sm">
+        <i class="fas fa-cog ml-1"></i> إدارة الأولوية
+    </a>
+    <?php endif; ?>
+</div>
+<?php endif; ?>
 
 <!-- Status Banner -->
 <?php if ($canSchedule): ?>
@@ -19,7 +43,12 @@ $__breadcrumb = [['label' => 'الجدولة']];
 </div>
 <?php else: ?>
 <div class="alert alert-warning">
-    <i class="fas fa-clock ml-1"></i> ليس دورك حالياً. يمكنك عرض حصصك المسجلة فقط.
+    <i class="fas fa-clock ml-1"></i>
+    <?php if ($priorityMode !== 'disabled'): ?>
+        ليس دورك حالياً بحسب نظام الأولوية. يمكنك عرض حصصك المسجلة فقط.
+    <?php else: ?>
+        ليس دورك حالياً. يمكنك عرض حصصك المسجلة فقط.
+    <?php endif; ?>
 </div>
 <?php endif; ?>
 

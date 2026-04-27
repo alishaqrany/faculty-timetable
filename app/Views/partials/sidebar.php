@@ -35,6 +35,7 @@ $matchesAny = static function (array $paths) use ($matchesRoute): bool {
 
 $permissions = [
     'scheduling' => can('scheduling.view'),
+    'priority' => can('priority.view'),
     'timetable' => can('timetable.view'),
     'members' => can('members.view'),
     'subjects' => can('subjects.view'),
@@ -61,6 +62,7 @@ $sectionBlueprint = [
         'icon' => 'fas fa-satellite-dish',
         'items' => [
             ['label' => 'الجدولة', 'path' => '/scheduling', 'icon' => 'far fa-calendar-check', 'permission' => 'scheduling'],
+            ['label' => 'إدارة الأولوية', 'path' => '/priority', 'icon' => 'fas fa-sort-amount-up', 'permission' => 'priority'],
             ['label' => 'الجدول الدراسي', 'path' => '/timetable', 'icon' => 'far fa-clock', 'permission' => 'timetable'],
         ],
     ],

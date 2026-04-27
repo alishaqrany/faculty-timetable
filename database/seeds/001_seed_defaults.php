@@ -52,6 +52,7 @@ return function (Database $db) {
             'classrooms.view', 'sessions.view',
             'membercourses.view', 'membercourses.create', 'membercourses.edit', 'membercourses.delete',
             'scheduling.view', 'scheduling.manage', 'scheduling.pass_role',
+            'priority.view', 'priority.manage', 'priority.grant_exception', 'priority.grant_register',
             'timetable.view', 'timetable.export',
             'notifications.view',
         ];
