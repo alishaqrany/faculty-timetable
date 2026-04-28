@@ -13,7 +13,9 @@ $priorityLabel = $priorityState['mode_label'] ?? 'معطل';
     <div class="mb-2 mb-sm-0">
         <i class="fas fa-sort-amount-up ml-1"></i>
         <strong>نظام الأولوية:</strong> <?= e($priorityLabel) ?>
-        <?php if ($priorityState['current_group']): ?>
+        <?php if ($priorityMode === 'parallel_dept'): ?>
+            — المجموعة تختلف حسب القسم
+        <?php elseif ($priorityState['current_group']): ?>
             — المجموعة الحالية: <strong><?= e($priorityState['current_group']['group_name']) ?></strong>
         <?php endif; ?>
         <?php if ($priorityState['current_department']): ?>

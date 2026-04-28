@@ -40,7 +40,13 @@ $__breadcrumb = [['label' => 'إدارة الأولوية']];
                     </span>
                     <div class="info-box-content">
                         <span class="info-box-text">المجموعة الحالية</span>
-                        <span class="info-box-number"><?= $state['current_group'] ? e($state['current_group']['group_name']) : 'غير محدد' ?></span>
+                        <span class="info-box-number">
+                            <?php if ($state['mode'] === 'parallel_dept'): ?>
+                                تختلف حسب القسم
+                            <?php else: ?>
+                                <?= $state['current_group'] ? e($state['current_group']['group_name']) : 'غير محدد' ?>
+                            <?php endif; ?>
+                        </span>
                     </div>
                 </div>
             </div>

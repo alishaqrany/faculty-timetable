@@ -74,12 +74,13 @@ class PriorityController extends \Controller
         $this->authorize('priority.manage');
         $this->validateCsrf();
 
+        $currentMode = PriorityService::getMode();
         $mode = $this->request->input('priority_mode', 'disabled');
         try {
             PriorityService::setMode($mode);
 
             if ($mode === PriorityService::MODE_PARALLEL_DEPT) {
-                PriorityService::initializeParallelDeptState();
+                PriorityService::initializeParallelDeptState(null, $currentMode !== PriorityService::MODE_PARALLEL_DEPT);
             } elseif ($mode === PriorityService::MODE_SEQUENTIAL_DEPT) {
                 DepartmentPriorityOrder::syncWithDepartments();
                 $firstDept = DepartmentPriorityOrder::currentDepartment();
@@ -244,6 +245,7 @@ class PriorityController extends \Controller
         if (!$group) $this->redirect('/priority/categories', 'المجموعة غير موجودة', 'error');
 
         PriorityGroup::destroy((int)$id);
+        PriorityService::handleDeletedGroup((int)$id, (int)$group['category_id']);
         AuditService::log('DELETE', 'priority_group', (int)$id);
         $this->redirect('/priority/categories/' . $group['category_id'] . '/groups', 'تم حذف المجموعة بنجاح ✓');
     }

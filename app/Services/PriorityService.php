@@ -59,6 +59,60 @@ class PriorityService
     }
 
     /**
+     * Persist the shared current-group pointer.
+     */
+    private static function setCurrentGroupId(?int $groupId): void
+    {
+        Setting::setValue('priority_current_group_id', $groupId ? (string) $groupId : '');
+    }
+
+    /**
+     * Ensure the shared current-group pointer still targets a valid group in the active category.
+     */
+    private static function repairCurrentGroupPointer(?int $categoryId = null): void
+    {
+        $categoryId = $categoryId ?? self::getActiveCategoryId();
+        $currentGroupId = self::getCurrentGroupId();
+        $currentGroup = $currentGroupId ? PriorityGroup::find($currentGroupId) : null;
+
+        if (!$currentGroup || ($categoryId && (int) $currentGroup['category_id'] !== $categoryId)) {
+            self::setCurrentGroupId(self::firstGroupIdForCategory($categoryId));
+        }
+    }
+
+    /**
+     * Repair per-department pointers without resetting departments that already progressed.
+     */
+    public static function repairParallelDeptPointers(?int $categoryId = null): void
+    {
+        $categoryId = $categoryId ?? self::getActiveCategoryId();
+        $firstGroupId = self::firstGroupIdForCategory($categoryId);
+
+        self::repairCurrentGroupPointer($categoryId);
+        DepartmentPriorityOrder::syncWithDepartments($firstGroupId);
+    }
+
+    /**
+     * Repair state after deleting a priority group.
+     */
+    public static function handleDeletedGroup(int $groupId, int $categoryId): void
+    {
+        DepartmentPriorityOrder::clearDeptCurrentGroupId($groupId);
+
+        $activeCategoryId = self::getActiveCategoryId();
+        if ($activeCategoryId !== $categoryId) {
+            return;
+        }
+
+        if (self::getMode() === self::MODE_PARALLEL_DEPT) {
+            self::repairParallelDeptPointers($activeCategoryId);
+            return;
+        }
+
+        self::repairCurrentGroupPointer($activeCategoryId);
+    }
+
+    /**
      * Sync and initialize per-department group state for parallel mode.
      *
      * When $resetAll is true, all departments are reseeded to the first group
@@ -71,7 +125,7 @@ class PriorityService
         $firstGroupId = self::firstGroupIdForCategory($categoryId);
 
         if ($resetAll) {
-            Setting::setValue('priority_current_group_id', $firstGroupId ? (string) $firstGroupId : '');
+            self::setCurrentGroupId($firstGroupId);
 
             DepartmentPriorityOrder::syncWithDepartments();
             DepartmentPriorityOrder::resetAll();
@@ -83,7 +137,7 @@ class PriorityService
             return;
         }
 
-        DepartmentPriorityOrder::syncWithDepartments($firstGroupId);
+        self::repairParallelDeptPointers($categoryId);
     }
 
     /**
@@ -100,7 +154,7 @@ class PriorityService
 
         // Set current group to first in category (or clear if empty)
         $firstGroupId = self::firstGroupIdForCategory($categoryId);
-        Setting::setValue('priority_current_group_id', $firstGroupId ? (string) $firstGroupId : '');
+        self::setCurrentGroupId($firstGroupId);
     }
 
     /**
@@ -447,9 +501,11 @@ class PriorityService
             $state['active_category'] = PriorityCategory::find($categoryId);
         }
 
-        $groupId = self::getCurrentGroupId();
-        if ($groupId) {
-            $state['current_group'] = PriorityGroup::find($groupId);
+        if ($mode !== self::MODE_PARALLEL_DEPT) {
+            $groupId = self::getCurrentGroupId();
+            if ($groupId) {
+                $state['current_group'] = PriorityGroup::find($groupId);
+            }
         }
 
         if ($mode === self::MODE_SEQUENTIAL_DEPT) {
@@ -476,7 +532,7 @@ class PriorityService
 
         $categoryId = self::getActiveCategoryId();
         $firstGroupId = self::firstGroupIdForCategory($categoryId);
-        Setting::setValue('priority_current_group_id', $firstGroupId ? (string) $firstGroupId : '');
+        self::setCurrentGroupId($firstGroupId);
 
         DepartmentPriorityOrder::resetAll();
 

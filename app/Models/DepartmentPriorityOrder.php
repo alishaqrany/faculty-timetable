@@ -98,6 +98,17 @@ class DepartmentPriorityOrder extends \Model
     }
 
     /**
+     * Clear any department pointers that reference the given group.
+     */
+    public static function clearDeptCurrentGroupId(int $groupId): void
+    {
+        \Database::getInstance()->execute(
+            "UPDATE department_priority_order SET current_group_id = NULL WHERE current_group_id = ?",
+            [$groupId]
+        );
+    }
+
+    /**
      * Initialize all departments with the first group of the given category.
      */
     public static function initAllDeptGroups(int $firstGroupId): void
