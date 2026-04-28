@@ -29,14 +29,22 @@ flowchart TD
 
 ```mermaid
 flowchart LR
-    U[Logged User] --> MC[Select member_course]
+    U[Logged User] --> P{Priority Mode?}
+    P -->|Disabled| R1[Check registration_status]
+    P -->|Global| R2[Check Priority Group]
+    P -->|Parallel| R3[Check Dept + Group]
+    P -->|Sequential| R4[Check Dept turn + Group]
+    
+    R1 & R2 & R3 & R4 --> V0{Has turn/exception?}
+    V0 -->|No| X0[Flash: Not your turn]
+    V0 -->|Yes| MC[Select member_course]
+    
     MC --> V1{Ownership check}
     V1 -->|Fail| X1[unauthorized.php]
     V1 -->|Pass| CL[Select classroom]
     CL --> SS[Select session]
-    SS --> V2{registration_status == 1}
-    V2 -->|No| X2[Flash: not your turn]
-    V2 -->|Yes| V3{classroom/session conflict?}
+    
+    SS --> V3{classroom/session conflict?}
     V3 -->|Yes| X3[Reject with message]
     V3 -->|No| V4{section-level time conflict?}
     V4 -->|Yes| X4[Reject with message]
@@ -58,6 +66,12 @@ erDiagram
     MEMBER_COURSES ||--o{ TIMETABLE : scheduled_as
     CLASSROOMS ||--o{ TIMETABLE : hosts
     SESSIONS ||--o{ TIMETABLE : occurs_in
+    PRIORITY_CATEGORIES ||--o{ PRIORITY_GROUPS : contains
+    PRIORITY_GROUPS ||--o{ PRIORITY_GROUP_MEMBERS : groups
+    FACULTY_MEMBERS ||--o{ PRIORITY_GROUP_MEMBERS : enrolled
+    FACULTY_MEMBERS ||--o{ PRIORITY_EXCEPTIONS : individual_exception
+    PRIORITY_GROUPS ||--o{ PRIORITY_EXCEPTIONS : group_exception
+    DEPARTMENTS ||--o{ DEPARTMENT_PRIORITY_ORDER : ordered
 ```
 
 ## 5) Module Blueprint
@@ -73,6 +87,8 @@ erDiagram
   - [core/flash.php](../core/flash.php)
 - Domain CRUD:
   - departments/levels/sections/subjects/classrooms/sessions/members/membercourses
+- Priority Management:
+  - priority/categories, priority/groups, priority/exceptions, priority/dept-order
 - Scheduling:
   - [scheduling.php](../scheduling.php)
   - [edit_scheduling.php](../edit_scheduling.php)
