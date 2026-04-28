@@ -146,3 +146,46 @@ $router->group('/api', ['RateLimitMiddleware', 'ApiAuthMiddleware'], function (R
     $router->get('/sections', 'Api\\TimetableController@sections');
     $router->get('/sessions', 'Api\\TimetableController@sessions');
 });
+
+// ── Mobile API v1 ───────────────────────────────────────────────────
+$router->group('/api/v1/auth', ['RateLimitMiddleware'], function (Router $router) {
+    $router->post('/login', 'Api\\V1\\AuthController@login');
+});
+
+$router->group('/api/v1', ['RateLimitMiddleware', 'ApiAuthMiddleware'], function (Router $router) {
+    $router->post('/auth/logout', 'Api\\V1\\AuthController@logout');
+    $router->get('/me', 'Api\\V1\\AuthController@me');
+
+    $router->get('/students/timetable', 'Api\\V1\\StudentController@timetable');
+    $router->get('/students/section-timetable', 'Api\\V1\\StudentController@sectionTimetable');
+    $router->get('/students/today-lectures', 'Api\\V1\\StudentController@todayLectures');
+
+    $router->get('/lookups/departments', 'Api\\V1\\LookupController@departments');
+    $router->get('/lookups/levels', 'Api\\V1\\LookupController@levels');
+    $router->get('/lookups/sections', 'Api\\V1\\LookupController@sections');
+    $router->get('/lookups/subjects', 'Api\\V1\\LookupController@subjects');
+    $router->get('/lookups/sessions', 'Api\\V1\\LookupController@sessions');
+    $router->get('/lookups/classrooms', 'Api\\V1\\LookupController@classrooms');
+});
+
+$router->group('/api/v1/admin', ['RateLimitMiddleware', 'ApiAuthMiddleware', 'ApiRoleMiddleware'], function (Router $router) {
+    $router->get('/departments', 'Api\\V1\\AdminController@departments');
+    $router->post('/departments', 'Api\\V1\\AdminController@storeDepartment');
+    $router->post('/departments/{id}', 'Api\\V1\\AdminController@updateDepartment');
+    $router->post('/departments/{id}/delete', 'Api\\V1\\AdminController@deleteDepartment');
+
+    $router->get('/subjects', 'Api\\V1\\AdminController@subjects');
+    $router->post('/subjects', 'Api\\V1\\AdminController@storeSubject');
+    $router->post('/subjects/{id}', 'Api\\V1\\AdminController@updateSubject');
+    $router->post('/subjects/{id}/delete', 'Api\\V1\\AdminController@deleteSubject');
+
+    $router->get('/sections', 'Api\\V1\\AdminController@sections');
+    $router->post('/sections', 'Api\\V1\\AdminController@storeSection');
+    $router->post('/sections/{id}', 'Api\\V1\\AdminController@updateSection');
+    $router->post('/sections/{id}/delete', 'Api\\V1\\AdminController@deleteSection');
+
+    $router->get('/sessions', 'Api\\V1\\AdminController@sessions');
+    $router->post('/sessions', 'Api\\V1\\AdminController@storeSession');
+    $router->post('/sessions/{id}', 'Api\\V1\\AdminController@updateSession');
+    $router->post('/sessions/{id}/delete', 'Api\\V1\\AdminController@deleteSession');
+});
