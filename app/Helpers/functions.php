@@ -108,13 +108,60 @@ function app_base_url(): string
 }
 
 /**
+ * Detect if URL rewriting is unavailable (e.g. Nginx without rewrite rules).
+ * When true, route URLs must include index.php/ prefix to work.
+ * Apache and LiteSpeed handle .htaccess natively so they don't need it.
+ */
+function needs_index_php_prefix(): bool
+{
+    static $result = null;
+    if ($result !== null) return $result;
+
+    // Apache and LiteSpeed support .htaccess rewrite rules natively
+    $server = strtolower($_SERVER['SERVER_SOFTWARE'] ?? '');
+    if (strpos($server, 'apache') !== false || strpos($server, 'litespeed') !== false) {
+        $result = false;
+        return false;
+    }
+
+    // If the current request already came through a clean URL (not via index.php),
+    // then URL rewriting IS configured on this server — no prefix needed
+    $requestUri = strtok($_SERVER['REQUEST_URI'] ?? '/', '?');
+    $basePath = app_base_path();
+    $pathAfterBase = $basePath !== '' ? substr($requestUri, strlen($basePath)) : $requestUri;
+    $pathAfterBase = '/' . ltrim((string) $pathAfterBase, '/');
+
+    // If the path is a real route (not "/" and not "index.php/..."), rewrite is working
+    if ($pathAfterBase !== '/'
+        && strpos($pathAfterBase, '/index.php') !== 0
+        && strpos($pathAfterBase, '/install.php') !== 0
+    ) {
+        $result = false;
+        return false;
+    }
+
+    // Default for non-Apache/LiteSpeed servers: use index.php prefix
+    $result = true;
+    return true;
+}
+
+/**
  * Generate a full URL from a path.
+ * Automatically injects index.php/ when URL rewriting is unavailable (e.g. Nginx).
  */
 function url(string $path = ''): string
 {
     $base = rtrim(app_base_url(), '/');
     if ($path === '' || $path === '/') return $base . '/';
-    return $base . '/' . ltrim($path, '/');
+
+    $cleanPath = ltrim($path, '/');
+
+    // Inject index.php prefix for route URLs on servers without URL rewriting
+    if (needs_index_php_prefix()) {
+        return $base . '/index.php/' . $cleanPath;
+    }
+
+    return $base . '/' . $cleanPath;
 }
 
 /**

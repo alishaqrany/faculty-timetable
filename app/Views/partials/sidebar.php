@@ -15,6 +15,13 @@ if ($currentPath === '//') {
     $currentPath = '/';
 }
 
+// Strip index.php prefix (used on Nginx without URL rewriting)
+if ($currentPath === '/index.php') {
+    $currentPath = '/';
+} elseif (str_starts_with($currentPath, '/index.php/')) {
+    $currentPath = substr($currentPath, strlen('/index.php'));
+}
+
 $matchesRoute = static function (string $path) use ($currentPath): bool {
     if ($path === '/') {
         return $currentPath === '/';
@@ -57,11 +64,11 @@ $permissions = [
 
 $sectionBlueprint = [
     [
-        'header' => 'منصة التشغيل',
-        'title' => 'محرك الجدولة',
+        'header' => ' التشغيل',
+        'title' => ' ادارة التسكين',
         'icon' => 'fas fa-satellite-dish',
         'items' => [
-            ['label' => 'الجدولة', 'path' => '/scheduling', 'icon' => 'far fa-calendar-check', 'permission' => 'scheduling'],
+            ['label' => 'التسكين', 'path' => '/scheduling', 'icon' => 'far fa-calendar-check', 'permission' => 'scheduling'],
             ['label' => 'إدارة الأولوية', 'path' => '/priority', 'icon' => 'fas fa-sort-amount-up', 'permission' => 'priority'],
             ['label' => 'الجدول الدراسي', 'path' => '/timetable', 'icon' => 'far fa-clock', 'permission' => 'timetable'],
         ],
