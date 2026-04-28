@@ -1,8 +1,33 @@
-<?php $this->layout('layouts.app'); $__page_title = 'خطأ 404'; ?>
+<?php
+$this->layout('layouts.public');
+$__page_title = 'الصفحة غير موجودة';
 
-<div class="text-center py-5">
-    <h1 class="display-1 text-muted">404</h1>
-    <h3>الصفحة غير موجودة</h3>
-    <p class="text-muted">الصفحة التي تبحث عنها غير موجودة أو تم نقلها.</p>
-    <a href="<?= url($auth ? '/dashboard' : '/') ?>" class="btn btn-primary mt-3"><i class="fas fa-home ml-1"></i> الرئيسية</a>
-</div>
+$this->include('errors.card', [
+    'tone' => 'slate',
+    'statusCode' => 404,
+    'badgeIcon' => 'fa-compass',
+    'pageHeading' => 'الصفحة غير موجودة',
+    'heroText' => 'تعذر العثور على الصفحة المطلوبة. ربما تم تغيير الرابط أو نقل الصفحة أو حذفها.',
+    'panelTitle' => 'ماذا يمكنك أن تفعل الآن؟',
+    'panelText' => 'يمكنك العودة إلى الصفحة الرئيسية أو محاولة إعادة فتح الرابط إذا كنت تعتقد أن المشكلة مؤقتة أو أن العنوان كُتب بشكل غير صحيح.',
+    'bullets' => [
+        'راجع الرابط في شريط العنوان وتأكد من عدم وجود خطأ كتابي.',
+        'استخدم الصفحة الرئيسية أو لوحة التحكم للوصول إلى القسم المطلوب من جديد.',
+        'إذا وصلت من رابط قديم أو محفوظ، فقد تكون الصفحة قد نُقلت إلى مسار آخر.',
+    ],
+    'actions' => [
+        [
+            'url' => $homeUrl ?? url('/'),
+            'label' => 'العودة للرئيسية',
+            'icon' => 'fa-house',
+            'variant' => 'primary',
+        ],
+        [
+            'url' => $retryUrl ?? url('/'),
+            'label' => 'إعادة المحاولة',
+            'icon' => 'fa-rotate-right',
+            'variant' => 'secondary',
+        ],
+    ],
+]);
+?>

@@ -76,7 +76,9 @@ class Controller
     {
         if (!can($permission)) {
             http_response_code(403);
-            $this->render('errors.403');
+            $this->render('errors.403', [
+                'homeUrl' => url($this->session->isLoggedIn() ? '/dashboard' : '/'),
+            ]);
             exit();
         }
     }

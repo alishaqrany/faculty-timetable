@@ -1,23 +1,34 @@
 <?php
-$this->layout('layouts.app');
+$this->layout('layouts.public');
 $__page_title = 'غير مصرح';
-?>
 
-<?php $this->section('content'); ?>
-<div class="content-wrapper" style="margin-right: 0;">
-    <div class="content">
-        <div class="container-fluid">
-            <div class="error-page" style="margin-top: 100px;">
-                <h2 class="headline text-danger">403</h2>
-                <div class="error-content pt-4">
-                    <h3><i class="fas fa-exclamation-triangle text-danger"></i> غير مصرح بالوصول</h3>
-                    <p>ليس لديك صلاحية للوصول إلى هذه الصفحة.</p>
-                    <a href="<?= url($auth ? '/dashboard' : '/') ?>" class="btn btn-primary">
-                        <i class="fas fa-home ml-1"></i> العودة للرئيسية
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-<?php $this->endSection(); ?>
+$this->include('errors.card', [
+    'tone' => 'amber',
+    'statusCode' => 403,
+    'badgeIcon' => 'fa-user-shield',
+    'pageHeading' => 'غير مصرح بالوصول',
+    'heroText' => 'تم منع هذا الطلب لأن الصفحة المطلوبة تحتاج إلى صلاحيات أعلى من الصلاحيات الحالية.',
+    'panelTitle' => 'كيف تتابع؟',
+    'panelText' => 'إذا كنت تعتقد أن لديك الحق في الوصول إلى هذه الصفحة، فتأكد من تسجيل الدخول بالحساب الصحيح أو راجع الصلاحيات الممنوحة لك داخل النظام.',
+    'bullets' => [
+        'تأكد من أنك تستخدم الحساب المناسب للدخول إلى لوحة التحكم.',
+        'ارجع إلى الصفحة الرئيسية أو لوحة التحكم ثم انتقل إلى القسم المصرح لك به فقط.',
+        'إذا كانت هذه الصفحة يجب أن تكون متاحة لك، راجع إعدادات الدور أو الصلاحيات مع مسؤول النظام.',
+    ],
+    'actions' => [
+        [
+            'url' => $homeUrl ?? url('/'),
+            'label' => 'العودة للرئيسية',
+            'icon' => 'fa-house',
+            'variant' => 'primary',
+        ],
+        [
+            'url' => url('/login'),
+            'label' => 'تسجيل الدخول',
+            'icon' => 'fa-right-to-bracket',
+            'variant' => 'secondary',
+        ],
+    ],
+    'note' => 'هذه ليست مشكلة تقنية في الخادم، بل رفض وصول بسبب الصلاحيات الحالية.',
+]);
+?>

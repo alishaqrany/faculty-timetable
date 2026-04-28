@@ -84,7 +84,8 @@ class Application
 
     private function handleException(\Throwable $exception): void
     {
-        error_log((string) $exception);
+        $errorReference = $this->generateErrorReference();
+        error_log('[' . $errorReference . '] ' . (string) $exception);
 
         while (ob_get_level() > 0) {
             ob_end_clean();
@@ -104,6 +105,18 @@ class Application
             'homeUrl' => url('/'),
             'retryUrl' => url($_SERVER['REQUEST_URI'] ?? '/'),
             'installUrl' => url('/install.php'),
+            'errorReference' => $errorReference,
         ]);
+    }
+
+    private function generateErrorReference(): string
+    {
+        try {
+            $suffix = strtoupper(bin2hex(random_bytes(3)));
+        } catch (\Throwable $exception) {
+            $suffix = strtoupper(substr(md5(uniqid('', true)), 0, 6));
+        }
+
+        return 'ERR-' . date('Ymd-His') . '-' . $suffix;
     }
 }

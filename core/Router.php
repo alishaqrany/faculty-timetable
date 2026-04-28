@@ -87,6 +87,8 @@ class Router
             'flash_errors' => [],
             'old' => [],
             'notifications_count' => 0,
+            'homeUrl' => url(Session::getInstance()->isLoggedIn() ? '/dashboard' : '/'),
+            'retryUrl' => url($_SERVER['REQUEST_URI'] ?? '/'),
         ]);
     }
 
