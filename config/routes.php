@@ -6,6 +6,7 @@
  */
 
 // ── Public routes (no auth) ────────────────────────────────────────
+$router->get('/', 'HomeController@index');
 $router->get('/login', 'AuthController@login');
 $router->post('/login', 'AuthController@doLogin');
 $router->post('/logout', 'AuthController@logout');
@@ -14,7 +15,7 @@ $router->post('/logout', 'AuthController@logout');
 $router->group('', ['AuthMiddleware', 'CsrfMiddleware'], function (Router $router) {
 
     // Dashboard
-    $router->get('/', 'DashboardController@index');
+    $router->get('/dashboard', 'DashboardController@index');
 
     // Profile
     $router->get('/profile', 'AuthController@profile');

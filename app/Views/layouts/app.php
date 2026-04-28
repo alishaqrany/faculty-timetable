@@ -25,12 +25,12 @@
     <!-- Select2 -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@ttskch/select2-bootstrap4-theme@1.5.2/dist/select2-bootstrap4.min.css">
-    <link rel="icon" type="image/svg+xml" href="<?= url('/assets/favicon.svg') ?>">
+    <link rel="icon" type="image/svg+xml" href="<?= asset('assets/favicon.svg') ?>">
 
     <style>
         /* Minimal inline overrides — main styles in custom.css */
     </style>
-    <link rel="stylesheet" href="<?= url('/assets/css/custom.css') ?>">
+    <link rel="stylesheet" href="<?= asset('assets/css/custom.css') ?>">
     <?php $this->yield('styles'); ?>
 </head>
 <body class="hold-transition layout-fixed layout-navbar-fixed app-modern-theme">
@@ -54,7 +54,7 @@
                     <div class="col-sm-6 d-flex justify-content-sm-end justify-content-start">
                         <?php if (!empty($__breadcrumb)): ?>
                         <ol class="breadcrumb">
-                            <li class="breadcrumb-item"><a href="<?= url('/') ?>"><i class="fas fa-home"></i></a></li>
+                            <li class="breadcrumb-item"><a href="<?= url('/dashboard') ?>"><i class="fas fa-home"></i></a></li>
                             <?php foreach ($__breadcrumb as $crumb): ?>
                                 <?php if (!empty($crumb['url'])): ?>
                                     <li class="breadcrumb-item"><a href="<?= url($crumb['url']) ?>"><?= e($crumb['label']) ?></a></li>
@@ -85,7 +85,7 @@
     <footer class="main-footer app-footer">
         <div class="d-flex flex-column flex-sm-row align-items-center justify-content-between">
             <div>
-                <strong>&copy; <?= date('Y') ?> <a href="<?= url('/') ?>"><?= e(config('app.name', 'نظام الجداول')) ?></a></strong>
+                <strong>&copy; <?= date('Y') ?> <a href="<?= url('/dashboard') ?>"><?= e(config('app.name', 'نظام الجداول')) ?></a></strong>
                 <span class="d-block d-sm-inline text-muted">جميع الحقوق محفوظة.</span>
             </div>
             <div class="text-muted small mt-2 mt-sm-0">
@@ -113,7 +113,7 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <!-- App JS -->
-<script src="<?= url('/assets/js/app.js') ?>"></script>
+<script src="<?= asset('assets/js/app.js') ?>"></script>
 <?php $this->yield('scripts'); ?>
 </body>
 </html>

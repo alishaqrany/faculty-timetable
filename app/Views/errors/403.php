@@ -12,7 +12,7 @@ $__page_title = 'غير مصرح';
                 <div class="error-content pt-4">
                     <h3><i class="fas fa-exclamation-triangle text-danger"></i> غير مصرح بالوصول</h3>
                     <p>ليس لديك صلاحية للوصول إلى هذه الصفحة.</p>
-                    <a href="<?= url('/') ?>" class="btn btn-primary">
+                    <a href="<?= url($auth ? '/dashboard' : '/') ?>" class="btn btn-primary">
                         <i class="fas fa-home ml-1"></i> العودة للرئيسية
                     </a>
                 </div>

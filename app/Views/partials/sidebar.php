@@ -158,7 +158,7 @@ foreach ($accountLinks as $link) {
 }
 ?>
 <aside class="main-sidebar sidebar-rebuild-v3 elevation-0">
-    <a href="<?= url('/') ?>" class="brand-link sidebar-rebuild-brand">
+    <a href="<?= url('/dashboard') ?>" class="brand-link sidebar-rebuild-brand">
         <span class="sidebar-rebuild-logo" aria-hidden="true">
             <i class="fas fa-bezier-curve"></i>
         </span>
@@ -171,7 +171,7 @@ foreach ($accountLinks as $link) {
         <nav class="sidebar-rebuild-nav mt-2">
             <ul class="nav nav-sidebar nav-child-indent flex-column" data-widget="treeview" data-accordion="false" role="menu">
                 <li class="nav-item">
-                    <a href="<?= url('/') ?>" class="nav-link sidebar-rebuild-link <?= $matchesRoute('/') ? 'active' : '' ?>">
+                    <a href="<?= url('/dashboard') ?>" class="nav-link sidebar-rebuild-link <?= $matchesRoute('/dashboard') ? 'active' : '' ?>">
                         <span class="sidebar-rebuild-icon"><i class="fas fa-th-large"></i></span>
                         <p>لوحة التحكم</p>
                     </a>

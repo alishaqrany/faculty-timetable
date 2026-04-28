@@ -12,7 +12,7 @@ class AuthController extends \Controller
     public function login(): void
     {
         if ($this->session->isLoggedIn()) {
-            $this->redirect('/');
+            $this->redirect('/dashboard');
         }
         $this->render('auth.login');
     }
@@ -49,7 +49,7 @@ class AuthController extends \Controller
 
         AuditService::log('LOGIN', 'auth', $user['id']);
 
-        $this->redirect('/', 'مرحباً بك في النظام');
+        $this->redirect('/dashboard', 'مرحباً بك في النظام');
     }
 
     public function logout(): void

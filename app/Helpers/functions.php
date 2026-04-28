@@ -110,9 +110,12 @@ function url(string $path = ''): string
 function asset(string $path): string
 {
     $base = rtrim(app_base_url(), '/');
-    $filePath = APP_ROOT . '/public/' . ltrim($path, '/');
+    $basePath = app_base_path();
+    $normalizedPath = ltrim($path, '/');
+    $publicPrefix = (substr($basePath, -7) === '/public') ? '' : '/public';
+    $filePath = APP_ROOT . '/public/' . $normalizedPath;
     $version = file_exists($filePath) ? filemtime($filePath) : time();
-    return $base . '/' . ltrim($path, '/') . '?v=' . $version;
+    return $base . $publicPrefix . '/' . $normalizedPath . '?v=' . $version;
 }
 
 /**
