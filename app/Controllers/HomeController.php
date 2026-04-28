@@ -17,6 +17,8 @@ class HomeController extends \Controller
         $filters = [
             'department_id' => $this->normalizeId($this->request->input('department_id')),
             'level_id'      => $this->normalizeId($this->request->input('level_id')),
+            'member_id'     => $this->normalizeId($this->request->input('member_id')),
+            'classroom_id'  => $this->normalizeId($this->request->input('classroom_id')),
         ];
 
         $data = [
@@ -31,11 +33,18 @@ class HomeController extends \Controller
             ],
             'departments'   => [],
             'levels'        => [],
+            'members'       => [],
+            'classrooms'    => [],
             'filters'       => $filters,
             'hasFilter'     => !empty(array_filter($filters)),
             'entries'       => [],
             'recentEntries' => [],
             'pivotData'     => null,
+            'insights'      => [
+                'topDepartment' => null,
+                'topMember'     => null,
+                'topClassroom'  => null,
+            ],
             'setupRequired' => false,
         ];
 
@@ -60,6 +69,8 @@ class HomeController extends \Controller
 
             $data['departments'] = Department::active();
             $data['levels'] = Level::active();
+            $data['members'] = Member::active();
+            $data['classrooms'] = Classroom::active();
             $data['recentEntries'] = $db->fetchAll(
                 "SELECT s.subject_name, fm.member_name, c.classroom_name,
                         sess.day, sess.session_name, sess.start_time, sess.end_time,
@@ -75,6 +86,36 @@ class HomeController extends \Controller
                  ORDER BY FIELD(sess.day,'الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس'), sess.start_time
                  LIMIT 10"
             );
+
+              $data['insights']['topDepartment'] = $db->fetch(
+                 "SELECT d.department_name AS name, COUNT(t.timetable_id) AS total
+                  FROM timetable t
+                  JOIN member_courses mc ON t.member_course_id = mc.member_course_id
+                  JOIN subjects s ON mc.subject_id = s.subject_id
+                  JOIN departments d ON s.department_id = d.department_id
+                  GROUP BY d.department_id, d.department_name
+                  ORDER BY total DESC, d.department_name ASC
+                  LIMIT 1"
+              );
+
+              $data['insights']['topMember'] = $db->fetch(
+                 "SELECT fm.member_name AS name, COUNT(t.timetable_id) AS total
+                  FROM timetable t
+                  JOIN member_courses mc ON t.member_course_id = mc.member_course_id
+                  JOIN faculty_members fm ON mc.member_id = fm.member_id
+                  GROUP BY fm.member_id, fm.member_name
+                  ORDER BY total DESC, fm.member_name ASC
+                  LIMIT 1"
+              );
+
+              $data['insights']['topClassroom'] = $db->fetch(
+                 "SELECT c.classroom_name AS name, COUNT(t.timetable_id) AS total
+                  FROM timetable t
+                  JOIN classrooms c ON t.classroom_id = c.classroom_id
+                  GROUP BY c.classroom_id, c.classroom_name
+                  ORDER BY total DESC, c.classroom_name ASC
+                  LIMIT 1"
+              );
 
             if ($data['hasFilter']) {
                 $activeFilters = array_filter($filters, static fn($value) => $value !== null);

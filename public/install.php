@@ -16,10 +16,7 @@ define('APP_ROOT', dirname(__DIR__));
 
 function detect_app_base_path(): string
 {
-    $scriptDir = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? '/'), '/\\');
-    if ($scriptDir === '.' || $scriptDir === '/') {
-        $scriptDir = '';
-    }
+    $scriptDir = detect_script_dir();
 
     $requestPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
     $requestPath = is_string($requestPath) && $requestPath !== '' ? $requestPath : '/';
@@ -35,12 +32,107 @@ function detect_app_base_path(): string
     return $scriptDir;
 }
 
+function detect_script_dir(): string
+{
+    $scriptDir = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? '/'), '/\\');
+    if ($scriptDir === '.' || $scriptDir === '/') {
+        return '';
+    }
+
+    return '/' . trim(str_replace('\\', '/', $scriptDir), '/');
+}
+
 function detect_app_url(): string
 {
     $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
         || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
     $scheme = $https ? 'https' : 'http';
     return $scheme . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . detect_app_base_path();
+}
+
+function detect_public_base_path(): string
+{
+    return detect_script_dir();
+}
+
+function build_app_config_content(string $appName, string $timezone, bool $debug = false): string
+{
+    $appNameExport = var_export($appName, true);
+    $timezoneExport = var_export($timezone, true);
+    $debugExport = $debug ? 'true' : 'false';
+
+    return <<<'PHP'
+<?php
+
+$env = static function (string $key, $default = null) {
+    if (array_key_exists($key, $_SERVER) && $_SERVER[$key] !== '') {
+        return $_SERVER[$key];
+    }
+
+    $value = getenv($key);
+    return ($value !== false && $value !== '') ? $value : $default;
+};
+
+$normalizePath = static function (?string $path): string {
+    $path = trim((string) $path);
+    if ($path === '' || $path === '.' || $path === '/') {
+        return '';
+    }
+
+    $path = '/' . trim(str_replace('\\', '/', $path), '/');
+    return $path === '/' ? '' : $path;
+};
+
+$scriptName = (string) ($_SERVER['SCRIPT_NAME'] ?? '/index.php');
+$scriptDir = $normalizePath(dirname($scriptName));
+
+$requestPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
+$requestPath = is_string($requestPath) && $requestPath !== '' ? $requestPath : '/';
+
+$publicSuffix = '/public';
+$basePath = $scriptDir;
+if ($basePath !== '' && substr($basePath, -strlen($publicSuffix)) === $publicSuffix) {
+    $hasPrefix = $requestPath === $basePath || strpos($requestPath, $basePath . '/') === 0;
+    if (!$hasPrefix) {
+        $basePath = substr($basePath, 0, -strlen($publicSuffix));
+    }
+}
+
+$basePathOverride = $normalizePath($env('APP_BASE_PATH'));
+$publicBasePathOverride = $normalizePath($env('APP_PUBLIC_BASE_PATH'));
+
+$configuredUrl = trim((string) $env('APP_URL', ''));
+if ($configuredUrl !== '' && $basePathOverride === '') {
+    $configuredPath = parse_url($configuredUrl, PHP_URL_PATH);
+    if (is_string($configuredPath)) {
+        $basePathOverride = $normalizePath($configuredPath);
+    }
+}
+
+$basePath = $basePathOverride !== '' ? $basePathOverride : $basePath;
+$publicBasePath = $publicBasePathOverride !== '' ? $publicBasePathOverride : $scriptDir;
+
+$https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+    || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https')
+    || (strtolower((string) $env('APP_FORCE_SCHEME', '')) === 'https');
+
+$host = (string) ($_SERVER['HTTP_HOST'] ?? $env('APP_HOST', 'localhost'));
+$detectedUrl = ($https ? 'https' : 'http') . '://' . $host . $basePath;
+
+return [
+    'name'      => __APP_NAME__,
+    'name_en'   => 'Timetable Management System',
+    'version'   => '2.0.0',
+    'url'       => $configuredUrl !== '' ? rtrim($configuredUrl, '/') : rtrim($detectedUrl, '/'),
+    'base_path' => $basePath,
+    'public_base_path' => $publicBasePath,
+    'timezone'  => __TIMEZONE__,
+    'debug'     => __DEBUG__,
+    'lang'      => 'ar',
+    'charset'   => 'UTF-8',
+    'per_page'  => 15,
+];
+PHP;
 }
 
 if (version_compare(PHP_VERSION, '8.0.0', '<')) {
@@ -211,10 +303,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($step === '5') {
         // Save system settings
-        $appName  = trim($_POST['app_name'] ?? 'نظام إدارة الجداول الدراسية');
-        $appUrl   = trim($_POST['app_url'] ?? '');
-        $basePath = trim($_POST['base_path'] ?? '');
-        $timezone = trim($_POST['timezone'] ?? 'Asia/Riyadh');
+            $appName  = trim($_POST['app_name'] ?? 'نظام إدارة الجداول الدراسية');
+            $appUrl   = trim($_POST['app_url'] ?? '');
+            $basePath = trim($_POST['base_path'] ?? '');
+            $timezone = trim($_POST['timezone'] ?? 'Asia/Riyadh');
 
         try {
             // Auto-detect URL if empty
@@ -225,17 +317,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $basePath = detect_app_base_path();
             }
 
-            // Write config/app.php
-            $appConfig = "<?php\n\nreturn [\n"
-                . "    'name'      => " . var_export($appName, true) . ",\n"
-                . "    'url'       => " . var_export(rtrim($appUrl, '/'), true) . ",\n"
-                . "    'base_path' => " . var_export($basePath, true) . ",\n"
-                . "    'timezone'  => " . var_export($timezone, true) . ",\n"
-                . "    'debug'     => false,\n"
-                . "    'lang'      => 'ar',\n"
-                . "    'charset'   => 'UTF-8',\n"
-                . "    'per_page'  => 15,\n"
-                . "];\n";
+            // Write a portable config/app.php that can adapt to different hosts and paths.
+            $appConfig = build_app_config_content($appName, $timezone, false);
+            $appConfig = str_replace('__APP_NAME__', var_export($appName, true), $appConfig);
+            $appConfig = str_replace('__TIMEZONE__', var_export($timezone, true), $appConfig);
+            $appConfig = str_replace('__DEBUG__', 'false', $appConfig);
+
+            if ($appUrl !== '') {
+                $appConfig = str_replace(
+                    "$configuredUrl = trim((string) $env('APP_URL', ''));",
+                    "$configuredUrl = trim((string) $env('APP_URL', '" . addslashes(rtrim($appUrl, '/')) . "'));",
+                    $appConfig
+                );
+            }
+
+            if ($basePath !== '') {
+                $normalizedBasePath = '/' . trim(str_replace('\\', '/', $basePath), '/');
+                if ($normalizedBasePath === '/') {
+                    $normalizedBasePath = '';
+                }
+
+                $appConfig = str_replace(
+                    "$basePathOverride = $normalizePath($env('APP_BASE_PATH'));",
+                    "$basePathOverride = $normalizePath($env('APP_BASE_PATH', '" . addslashes($normalizedBasePath) . "'));",
+                    $appConfig
+                );
+            }
+
             file_put_contents(APP_ROOT . '/config/app.php', $appConfig);
 
             // Save institution name in settings table
@@ -469,12 +577,12 @@ if (!is_array($appCfg)) $appCfg = [];
                 <div class="form-group">
                     <label>رابط التطبيق (URL)</label>
                     <input type="text" name="app_url" class="form-control text-left" dir="ltr" value="<?= htmlspecialchars($appCfg['url'] ?? $autoUrl) ?>" placeholder="<?= htmlspecialchars($autoUrl) ?>">
-                    <small class="form-text text-muted">اتركه فارغًا للكشف التلقائي. مثال: <code dir="ltr"><?= htmlspecialchars($autoUrl) ?></code></small>
+                    <small class="form-text text-muted">الأفضل تركه فارغًا ليبقى النقل بين الخوادم مرنًا. مثال: <code dir="ltr"><?= htmlspecialchars($autoUrl) ?></code></small>
                 </div>
                 <div class="form-group">
                     <label>المسار الأساسي (Base Path)</label>
                     <input type="text" name="base_path" class="form-control text-left" dir="ltr" value="<?= htmlspecialchars($appCfg['base_path'] ?? $autoBase) ?>" placeholder="<?= htmlspecialchars($autoBase) ?>">
-                    <small class="form-text text-muted">اتركه فارغًا للكشف التلقائي. مثال: <code dir="ltr"><?= htmlspecialchars($autoBase) ?></code></small>
+                    <small class="form-text text-muted">الأفضل تركه فارغًا ليُكتشف تلقائيًا حسب مكان النشر. مثال: <code dir="ltr"><?= htmlspecialchars($autoBase) ?></code></small>
                 </div>
                 <div class="form-group">
                     <label>المنطقة الزمنية</label>

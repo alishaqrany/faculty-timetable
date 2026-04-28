@@ -48,6 +48,19 @@ function app_base_path(): string
     return $basePath;
 }
 
+function app_public_base_path(): string
+{
+    static $publicBasePath = null;
+    if ($publicBasePath !== null) return $publicBasePath;
+
+    $publicBasePath = rtrim((string) config('app.public_base_path', app_base_path()), '/');
+    if ($publicBasePath === '.' || $publicBasePath === '/') {
+        $publicBasePath = '';
+    }
+
+    return $publicBasePath;
+}
+
 function app_base_url(): string
 {
     static $baseUrl = null;
@@ -112,10 +125,18 @@ function asset(string $path): string
     $base = rtrim(app_base_url(), '/');
     $basePath = app_base_path();
     $normalizedPath = ltrim($path, '/');
-    $publicPrefix = (substr($basePath, -7) === '/public') ? '' : '/public';
+    $publicPrefix = rtrim(app_public_base_path(), '/');
+    if ($basePath !== '' && $publicPrefix !== '' && strpos($publicPrefix, $basePath) === 0) {
+        $publicPrefix = substr($publicPrefix, strlen($basePath));
+    }
+
+    if ($publicPrefix === '/' || $publicPrefix === '.') {
+        $publicPrefix = '';
+    }
+
     $filePath = APP_ROOT . '/public/' . $normalizedPath;
     $version = file_exists($filePath) ? filemtime($filePath) : time();
-    return $base . $publicPrefix . '/' . $normalizedPath . '?v=' . $version;
+    return $base . ($publicPrefix !== '' ? $publicPrefix : '') . '/' . $normalizedPath . '?v=' . $version;
 }
 
 /**
