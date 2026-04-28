@@ -48,15 +48,59 @@ class PriorityService
     }
 
     /**
+     * Get the first active group ID for a category.
+     */
+    private static function firstGroupIdForCategory(?int $categoryId): ?int
+    {
+        if (!$categoryId) return null;
+
+        $first = PriorityGroup::firstInCategory($categoryId);
+        return $first ? (int) $first['id'] : null;
+    }
+
+    /**
+     * Sync and initialize per-department group state for parallel mode.
+     *
+     * When $resetAll is true, all departments are reseeded to the first group
+     * of the active category. Otherwise, only missing departments / empty
+     * pointers are initialized, preserving departments that already progressed.
+     */
+    public static function initializeParallelDeptState(?int $categoryId = null, bool $resetAll = true): void
+    {
+        $categoryId = $categoryId ?? self::getActiveCategoryId();
+        $firstGroupId = self::firstGroupIdForCategory($categoryId);
+
+        if ($resetAll) {
+            Setting::setValue('priority_current_group_id', $firstGroupId ? (string) $firstGroupId : '');
+
+            DepartmentPriorityOrder::syncWithDepartments();
+            DepartmentPriorityOrder::resetAll();
+
+            if ($firstGroupId) {
+                DepartmentPriorityOrder::initAllDeptGroups($firstGroupId);
+            }
+
+            return;
+        }
+
+        DepartmentPriorityOrder::syncWithDepartments($firstGroupId);
+    }
+
+    /**
      * Set the active category.
      */
     public static function setActiveCategory(int $categoryId): void
     {
         Setting::setValue('priority_active_category_id', (string) $categoryId);
 
+        if (self::getMode() === self::MODE_PARALLEL_DEPT) {
+            self::initializeParallelDeptState($categoryId, true);
+            return;
+        }
+
         // Set current group to first in category (or clear if empty)
-        $first = PriorityGroup::firstInCategory($categoryId);
-        Setting::setValue('priority_current_group_id', $first ? (string) $first['id'] : '');
+        $firstGroupId = self::firstGroupIdForCategory($categoryId);
+        Setting::setValue('priority_current_group_id', $firstGroupId ? (string) $firstGroupId : '');
     }
 
     /**
@@ -420,22 +464,21 @@ class PriorityService
      */
     public static function resetPriority(): void
     {
-        $categoryId = self::getActiveCategoryId();
-        $firstGroupId = null;
-        if ($categoryId) {
-            $first = PriorityGroup::firstInCategory($categoryId);
-            if ($first) {
-                $firstGroupId = (int) $first['id'];
-                Setting::setValue('priority_current_group_id', (string) $firstGroupId);
+        if (self::getMode() === self::MODE_PARALLEL_DEPT) {
+            self::initializeParallelDeptState(null, true);
+
+            $firstDept = DepartmentPriorityOrder::currentDepartment();
+            if ($firstDept) {
+                Setting::setValue('priority_current_dept_id', (string) $firstDept['department_id']);
             }
+            return;
         }
+
+        $categoryId = self::getActiveCategoryId();
+        $firstGroupId = self::firstGroupIdForCategory($categoryId);
+        Setting::setValue('priority_current_group_id', $firstGroupId ? (string) $firstGroupId : '');
 
         DepartmentPriorityOrder::resetAll();
-
-        // Initialize per-dept group tracking for parallel mode
-        if ($firstGroupId) {
-            DepartmentPriorityOrder::initAllDeptGroups($firstGroupId);
-        }
 
         // Reset current dept to first
         $firstDept = DepartmentPriorityOrder::currentDepartment();

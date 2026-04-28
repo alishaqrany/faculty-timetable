@@ -30,7 +30,10 @@ class PriorityController extends \Controller
         $exceptions = PriorityException::allActive();
 
         $deptOrder = [];
-        if (in_array($state['mode'], [PriorityService::MODE_PARALLEL_DEPT, PriorityService::MODE_SEQUENTIAL_DEPT])) {
+        if ($state['mode'] === PriorityService::MODE_PARALLEL_DEPT) {
+            PriorityService::initializeParallelDeptState(null, false);
+            $deptOrder = DepartmentPriorityOrder::allWithDetails();
+        } elseif ($state['mode'] === PriorityService::MODE_SEQUENTIAL_DEPT) {
             DepartmentPriorityOrder::syncWithDepartments();
             $deptOrder = DepartmentPriorityOrder::allWithDetails();
         }
@@ -74,9 +77,10 @@ class PriorityController extends \Controller
         $mode = $this->request->input('priority_mode', 'disabled');
         try {
             PriorityService::setMode($mode);
-            
-            // If switching to sequential_dept, sync departments
-            if ($mode === PriorityService::MODE_SEQUENTIAL_DEPT) {
+
+            if ($mode === PriorityService::MODE_PARALLEL_DEPT) {
+                PriorityService::initializeParallelDeptState();
+            } elseif ($mode === PriorityService::MODE_SEQUENTIAL_DEPT) {
                 DepartmentPriorityOrder::syncWithDepartments();
                 $firstDept = DepartmentPriorityOrder::currentDepartment();
                 if ($firstDept) {

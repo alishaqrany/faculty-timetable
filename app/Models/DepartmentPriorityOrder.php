@@ -111,7 +111,7 @@ class DepartmentPriorityOrder extends \Model
     /**
      * Sync department ordering (insert missing, remove deleted).
      */
-    public static function syncWithDepartments(): void
+    public static function syncWithDepartments(?int $initialGroupId = null): void
     {
         $db = \Database::getInstance();
         
@@ -128,12 +128,25 @@ class DepartmentPriorityOrder extends \Model
         foreach ($deptIds as $deptId) {
             if (!in_array($deptId, $existingIds)) {
                 $maxOrder++;
-                $db->insert('department_priority_order', [
+                $insertData = [
                     'department_id' => $deptId,
                     'sort_order' => $maxOrder,
                     'is_completed' => 0,
-                ]);
+                ];
+
+                if ($initialGroupId) {
+                    $insertData['current_group_id'] = $initialGroupId;
+                }
+
+                $db->insert('department_priority_order', $insertData);
             }
+        }
+
+        if ($initialGroupId) {
+            $db->execute(
+                "UPDATE department_priority_order SET current_group_id = ? WHERE current_group_id IS NULL",
+                [$initialGroupId]
+            );
         }
         
         // Remove entries for deleted/inactive departments
