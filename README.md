@@ -29,6 +29,9 @@ University timetable management system built with PHP and MySQL.
 - [Arabic Site Documentation](docs/complete-site-documentation-ar.md)
 - [Arabic Architecture Blueprint](docs/site-blueprint-ar.md)
 - [URL Compatibility Map](docs/url-compatibility-map.md)
+- [Mobile API v1 Spec](docs/mobile-api-v1-spec.md)
+- [Mobile App Specification (Arabic)](docs/mobile-app-spec-ar.md)
+- [Mobile App Development Plan (Arabic)](docs/mobile-app-development-plan-ar.md)
 
 ## Screenshots Preview
 

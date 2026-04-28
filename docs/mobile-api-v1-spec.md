@@ -1,37 +1,35 @@
 # Mobile API v1 Spec
 
-## Current API Inventory (Reusable)
+This document tracks the implemented mobile API layer that was added on top of the existing PHP MVC system.
 
-### Authentication
-- `POST /api/auth/login` -> `Api\AuthController@login`
-  - body: `username`, `password`
-  - returns: token + user basics
+## What was added
 
-### Timetable Data
-- `GET /api/timetable` -> `Api\TimetableController@index`
-  - filters: `department_id`, `level_id`, `member_id`, `classroom_id`
-- `GET /api/departments`
-- `GET /api/members`
-- `GET /api/classrooms`
-- `GET /api/subjects`
-- `GET /api/sections`
-- `GET /api/sessions`
+- New namespace: `Api\V1` controllers.
+- Unified API response contract through `BaseApiController`.
+- New role middleware for admin mobile endpoints.
+- New route groups in `config/routes.php` under `/api/v1/*`.
+- DB index migration for mobile-heavy timetable queries.
 
-### Internal AJAX Endpoints (Web UI)
-- `GET /api/divisions/by-dept-level`
-- `GET /api/sections/by-division`
+## Implemented backend files
 
-## v1 Contract
+- `app/Controllers/Api/V1/BaseApiController.php`
+- `app/Controllers/Api/V1/AuthController.php`
+- `app/Controllers/Api/V1/StudentController.php`
+- `app/Controllers/Api/V1/LookupController.php`
+- `app/Controllers/Api/V1/AdminController.php`
+- `app/Middleware/ApiRoleMiddleware.php`
+- `database/migrations/035_add_mobile_api_indexes.php`
 
-### Base path
-- `/api/v1`
+## Base URL and auth
 
-### Authentication
+- Base path: `/api/v1`
 - Token type: Bearer
-- Header: `Authorization: Bearer <token>`
+- Header:
+  - `Authorization: Bearer <token>`
 
-### Unified response envelope
-- Success:
+## Response contract
+
+### Success
 ```json
 {
   "success": true,
@@ -40,7 +38,8 @@
   "meta": {}
 }
 ```
-- Error:
+
+### Error
 ```json
 {
   "success": false,
@@ -51,26 +50,37 @@
 }
 ```
 
-### Error status codes
-- `400` invalid request
-- `401` unauthenticated
-- `403` unauthorized
-- `404` resource not found
-- `422` validation error
-- `429` too many requests
-- `500` internal server error
+## Status code convention
 
-### Student Endpoints
+- `200` Success
+- `201` Created
+- `400` Invalid request
+- `401` Unauthenticated
+- `403` Unauthorized
+- `404` Not found
+- `422` Validation error
+- `429` Too many requests
+- `500` Internal error
+
+## Endpoints
+
+## Auth
+
+- `POST /api/v1/auth/login`
+  - body: `username`, `password` (form fields)
+  - returns: token, token type, expires date, user data
+- `POST /api/v1/auth/logout` (auth required)
+- `GET /api/v1/me` (auth required)
+
+## Student
+
 - `GET /api/v1/students/timetable?department_id=&level_id=`
 - `GET /api/v1/students/section-timetable?section_id=`
-- `GET /api/v1/students/today-lectures?section_id=|department_id=&level_id=&date=`
+- `GET /api/v1/students/today-lectures?section_id=&date=`
+- `GET /api/v1/students/today-lectures?department_id=&level_id=&date=`
 
-### Auth Endpoints
-- `POST /api/v1/auth/login`
-- `POST /api/v1/auth/logout`
-- `GET /api/v1/me`
+## Lookups
 
-### Lookup Endpoints
 - `GET /api/v1/lookups/departments`
 - `GET /api/v1/lookups/levels`
 - `GET /api/v1/lookups/sections`
@@ -78,20 +88,43 @@
 - `GET /api/v1/lookups/sessions`
 - `GET /api/v1/lookups/classrooms`
 
-### Admin Endpoints (Phase 1)
-- `GET /api/v1/admin/departments`
-- `POST /api/v1/admin/departments`
-- `POST /api/v1/admin/departments/{id}`
-- `POST /api/v1/admin/departments/{id}/delete`
-- same shape for:
-  - `subjects`
-  - `sections`
-  - `sessions`
+## Admin (Phase 1)
 
-### Pagination/filter/sort convention
-- Query:
-  - `page` (default 1)
-  - `per_page` (default 20, max 100)
-  - `q` (search)
-  - `sort_by`
-  - `sort_dir` (`asc`|`desc`)
+Admin routes require `ApiRoleMiddleware` and currently allow `admin` and `dept_head`.
+
+- Departments
+  - `GET /api/v1/admin/departments`
+  - `POST /api/v1/admin/departments`
+  - `POST /api/v1/admin/departments/{id}`
+  - `POST /api/v1/admin/departments/{id}/delete`
+- Subjects
+  - `GET /api/v1/admin/subjects`
+  - `POST /api/v1/admin/subjects`
+  - `POST /api/v1/admin/subjects/{id}`
+  - `POST /api/v1/admin/subjects/{id}/delete`
+- Sections
+  - `GET /api/v1/admin/sections`
+  - `POST /api/v1/admin/sections`
+  - `POST /api/v1/admin/sections/{id}`
+  - `POST /api/v1/admin/sections/{id}/delete`
+- Sessions
+  - `GET /api/v1/admin/sessions`
+  - `POST /api/v1/admin/sessions`
+  - `POST /api/v1/admin/sessions/{id}`
+  - `POST /api/v1/admin/sessions/{id}/delete`
+
+## Query conventions (admin list endpoints)
+
+- `page` default `1`
+- `per_page` default `20`, max `100`
+- `q` for free text search
+
+## Added database indexes
+
+Migration: `database/migrations/035_add_mobile_api_indexes.php`
+
+- `subjects(department_id, level_id)`
+- `sessions(day, start_time)`
+- `member_courses(section_id)`
+- `member_courses(subject_id)`
+- `timetable(member_course_id, session_id)`
