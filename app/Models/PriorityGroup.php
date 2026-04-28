@@ -106,4 +106,20 @@ class PriorityGroup extends \Model
             [$categoryId]
         );
     }
+
+    /**
+     * Check if a member is already in any group within a category.
+     * Returns the group details if found, null otherwise.
+     */
+    public static function isMemberInCategory(int $memberId, int $categoryId): ?array
+    {
+        return static::queryOne(
+            "SELECT pg.id, pg.group_name
+             FROM priority_group_members pgm
+             JOIN priority_groups pg ON pgm.group_id = pg.id
+             WHERE pgm.member_id = ? AND pg.category_id = ?
+             LIMIT 1",
+            [$memberId, $categoryId]
+        );
+    }
 }

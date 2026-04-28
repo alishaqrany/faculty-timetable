@@ -68,6 +68,7 @@ $router->group('', ['AuthMiddleware', 'CsrfMiddleware'], function (Router $route
     $router->post('/priority/dept-order', 'PriorityController@saveDeptOrder');
     $router->post('/priority/advance-group', 'PriorityController@advanceGroup');
     $router->post('/priority/advance-dept', 'PriorityController@advanceDept');
+    $router->post('/priority/advance-dept-group/{id}', 'PriorityController@advanceDeptGroup');
     $router->post('/priority/reset', 'PriorityController@resetPriority');
     $router->post('/priority/grant-register/{id}', 'PriorityController@grantMemberRegister');
     $router->post('/priority/revoke-register/{id}', 'PriorityController@revokeMemberRegister');

@@ -30,7 +30,7 @@ class PriorityController extends \Controller
         $exceptions = PriorityException::allActive();
 
         $deptOrder = [];
-        if ($state['mode'] === PriorityService::MODE_SEQUENTIAL_DEPT) {
+        if (in_array($state['mode'], [PriorityService::MODE_PARALLEL_DEPT, PriorityService::MODE_SEQUENTIAL_DEPT])) {
             DepartmentPriorityOrder::syncWithDepartments();
             $deptOrder = DepartmentPriorityOrder::allWithDetails();
         }
@@ -276,6 +276,17 @@ class PriorityController extends \Controller
             $this->redirect('/priority/groups/' . $groupId . '/members', 'العضو موجود بالفعل في هذه المجموعة', 'warning');
         }
 
+        // Prevent membership in multiple groups within the same category
+        $group = PriorityGroup::find((int)$groupId);
+        if ($group) {
+            $existingInCategory = PriorityGroup::isMemberInCategory($memberId, (int)$group['category_id']);
+            if ($existingInCategory) {
+                $this->redirect('/priority/groups/' . $groupId . '/members',
+                    'العضو موجود بالفعل في مجموعة أخرى (' . e($existingInCategory['group_name']) . ') داخل نفس التصنيف. يجب إزالته أولاً.',
+                    'error');
+            }
+        }
+
         PriorityGroup::addMember((int)$groupId, $memberId);
         AuditService::log('CREATE', 'priority_group_member', null, null, ['group_id' => $groupId, 'member_id' => $memberId]);
         $this->redirect('/priority/groups/' . $groupId . '/members', 'تم إضافة العضو بنجاح ✓');
@@ -411,6 +422,23 @@ class PriorityController extends \Controller
             $this->redirect('/priority', 'تم الانتقال للقسم التالي ✓');
         } else {
             $this->redirect('/priority', 'لا يوجد قسم تالي — تم الانتهاء من جميع الأقسام', 'warning');
+        }
+    }
+
+    /**
+     * Advance a specific department to its next group (parallel mode).
+     */
+    public function advanceDeptGroup(string $deptId): void
+    {
+        $this->authorize('priority.manage');
+        $this->validateCsrf();
+
+        $success = PriorityService::advanceDeptGroup((int) $deptId);
+        if ($success) {
+            AuditService::log('UPDATE', 'priority_advance_dept_group', (int) $deptId);
+            $this->redirect('/priority', 'تم تقديم القسم للمجموعة التالية ✓');
+        } else {
+            $this->redirect('/priority', 'لا توجد مجموعة تالية لهذا القسم', 'warning');
         }
     }
 

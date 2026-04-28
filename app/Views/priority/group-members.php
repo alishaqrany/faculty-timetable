@@ -8,8 +8,16 @@ $__breadcrumb = [
     ['label' => e($group['group_name'])],
 ];
 
-// Build existing member IDs for filtering
-$existingMemberIds = array_column($members, 'member_id');
+// Build IDs of members already in ANY group within this category
+$categoryMemberIds = [];
+$db = \Database::getInstance();
+$categoryMembers = $db->fetchAll(
+    "SELECT pgm.member_id FROM priority_group_members pgm
+     JOIN priority_groups pg ON pgm.group_id = pg.id
+     WHERE pg.category_id = ?",
+    [$category['id']]
+);
+$categoryMemberIds = array_column($categoryMembers, 'member_id');
 ?>
 
 <!-- Add Member -->
@@ -27,7 +35,7 @@ $existingMemberIds = array_column($members, 'member_id');
                         <select name="member_id" class="form-control select2" required>
                             <option value="">-- اختر عضواً --</option>
                             <?php foreach ($allMembers as $m): ?>
-                                <?php if (!in_array($m['member_id'], $existingMemberIds)): ?>
+                                <?php if (!in_array($m['member_id'], $categoryMemberIds)): ?>
                                 <option value="<?= $m['member_id'] ?>">
                                     <?= e($m['member_name']) ?>
                                     <?php if ($m['department_name']): ?> — <?= e($m['department_name']) ?><?php endif; ?>
@@ -71,6 +79,21 @@ $existingMemberIds = array_column($members, 'member_id');
                     <td><?= e($m['department_name'] ?? '—') ?></td>
                     <td><?= e($m['degree_name'] ?? '—') ?></td>
                     <td>
+                        <?php if (can('priority.grant_register')): ?>
+                        <form method="POST" action="<?= url("/priority/grant-register/{$m['member_id']}") ?>" class="d-inline">
+                            <?= csrf_field() ?>
+                            <button type="submit" class="btn btn-success btn-xs" title="منح أولوية إدخال">
+                                <i class="fas fa-magic"></i> منح
+                            </button>
+                        </form>
+                        <form method="POST" action="<?= url("/priority/revoke-register/{$m['member_id']}") ?>" class="d-inline">
+                            <?= csrf_field() ?>
+                            <button type="submit" class="btn btn-warning btn-xs" title="سحب أولوية إدخال"
+                                    onclick="return confirm('هل تريد سحب الأولوية؟')">
+                                <i class="fas fa-ban"></i> سحب
+                            </button>
+                        </form>
+                        <?php endif; ?>
                         <form method="POST" action="<?= url("/priority/group-members/{$m['pivot_id']}/delete") ?>" class="d-inline">
                             <?= csrf_field() ?>
                             <button type="submit" class="btn btn-danger btn-xs"

@@ -54,11 +54,9 @@ class PriorityService
     {
         Setting::setValue('priority_active_category_id', (string) $categoryId);
 
-        // Set current group to first in category
+        // Set current group to first in category (or clear if empty)
         $first = PriorityGroup::firstInCategory($categoryId);
-        if ($first) {
-            Setting::setValue('priority_current_group_id', (string) $first['id']);
-        }
+        Setting::setValue('priority_current_group_id', $first ? (string) $first['id'] : '');
     }
 
     /**
@@ -152,28 +150,38 @@ class PriorityService
 
     /**
      * Parallel dept mode: each dept applies priority internally.
-     * All departments run in parallel, priority is applied within each department.
-     * A member can register only if their priority group (within their dept)
-     * is the current group or an already-passed group.
+     * All departments run in parallel — each department tracks its own
+     * current group independently via department_priority_order.current_group_id.
      */
     private static function canRegisterParallelDept(int $memberId): bool
     {
         $categoryId = self::getActiveCategoryId();
-        $currentGroupId = self::getCurrentGroupId();
-        if (!$categoryId || !$currentGroupId) return false;
-
-        $currentGroup = PriorityGroup::find($currentGroupId);
-        if (!$currentGroup) return false;
+        if (!$categoryId) return false;
 
         // Verify the member belongs to an active department
         $member = Member::find($memberId);
         if (!$member || !$member['department_id']) return false;
 
-        // Check if member is in current group or already-passed group
-        if (PriorityGroup::isMemberInGroup($currentGroupId, $memberId)) {
+        $deptId = (int) $member['department_id'];
+
+        // Get this department's own current group (independent progression)
+        $deptGroupId = DepartmentPriorityOrder::getDeptCurrentGroupId($deptId);
+
+        // Fallback to global group if dept doesn't have its own yet
+        if (!$deptGroupId) {
+            $deptGroupId = self::getCurrentGroupId();
+        }
+        if (!$deptGroupId) return false;
+
+        $currentGroup = PriorityGroup::find($deptGroupId);
+        if (!$currentGroup) return false;
+
+        // Check if member is in current group
+        if (PriorityGroup::isMemberInGroup($deptGroupId, $memberId)) {
             return true;
         }
 
+        // Check if member is in an already-passed group (lower sort_order)
         $memberGroups = PriorityGroup::findGroupsForMember($memberId);
         foreach ($memberGroups as $mg) {
             if ((int) $mg['category_id'] === $categoryId && (int) $mg['sort_order'] < (int) $currentGroup['sort_order']) {
@@ -297,6 +305,31 @@ class PriorityService
     }
 
     /**
+     * Advance a specific department to its next group (parallel mode).
+     */
+    public static function advanceDeptGroup(int $departmentId): bool
+    {
+        $categoryId = self::getActiveCategoryId();
+        if (!$categoryId) return false;
+
+        $currentGroupId = DepartmentPriorityOrder::getDeptCurrentGroupId($departmentId);
+        if (!$currentGroupId) $currentGroupId = self::getCurrentGroupId();
+        if (!$currentGroupId) return false;
+
+        $currentGroup = PriorityGroup::find($currentGroupId);
+        if (!$currentGroup) return false;
+
+        $next = PriorityGroup::nextInCategory($categoryId, (int) $currentGroup['sort_order']);
+        if ($next) {
+            DepartmentPriorityOrder::setDeptCurrentGroupId($departmentId, (int) $next['id']);
+            return true;
+        }
+
+        // All groups done for this department
+        return false;
+    }
+
+    /**
      * Advance to next department (sequential mode).
      */
     public static function advanceToNextDepartment(): bool
@@ -388,14 +421,21 @@ class PriorityService
     public static function resetPriority(): void
     {
         $categoryId = self::getActiveCategoryId();
+        $firstGroupId = null;
         if ($categoryId) {
             $first = PriorityGroup::firstInCategory($categoryId);
             if ($first) {
-                Setting::setValue('priority_current_group_id', (string) $first['id']);
+                $firstGroupId = (int) $first['id'];
+                Setting::setValue('priority_current_group_id', (string) $firstGroupId);
             }
         }
 
         DepartmentPriorityOrder::resetAll();
+
+        // Initialize per-dept group tracking for parallel mode
+        if ($firstGroupId) {
+            DepartmentPriorityOrder::initAllDeptGroups($firstGroupId);
+        }
 
         // Reset current dept to first
         $firstDept = DepartmentPriorityOrder::currentDepartment();

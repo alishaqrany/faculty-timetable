@@ -4,6 +4,7 @@ return function (Database $db) {
         `id` INT AUTO_INCREMENT PRIMARY KEY,
         `department_id` INT NOT NULL,
         `sort_order` INT DEFAULT 0,
+        `current_group_id` INT NULL DEFAULT NULL,
         `is_completed` TINYINT(1) DEFAULT 0,
         `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

@@ -34,12 +34,14 @@ $priorityLabel = $priorityState['mode_label'] ?? 'معطل';
     <div class="mb-2 mb-sm-0">
         <i class="fas fa-check-circle ml-1"></i> <strong>دورك الآن!</strong> يمكنك إضافة حصصك في الجدول.
     </div>
+    <?php if ($priorityMode === 'disabled'): ?>
     <form method="POST" action="<?= url('/scheduling/pass-role') ?>" class="m-0">
         <?= csrf_field() ?>
         <button type="submit" class="btn btn-outline-dark btn-sm" onclick="return confirm('هل تريد تمرير الدور للعضو التالي؟')">
             <i class="fas fa-forward ml-1"></i> تمرير الدور
         </button>
     </form>
+    <?php endif; ?>
 </div>
 <?php else: ?>
 <div class="alert alert-warning">

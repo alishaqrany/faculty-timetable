@@ -209,31 +209,72 @@ $__breadcrumb = [['label' => 'إدارة الأولوية']];
     </div>
 </div>
 
-<!-- Department Order (if sequential mode) -->
-<?php if ($state['mode'] === 'sequential_dept' && !empty($deptOrder)): ?>
+<!-- Department Status (parallel or sequential mode) -->
+<?php if (in_array($state['mode'], ['parallel_dept', 'sequential_dept']) && !empty($deptOrder)): ?>
 <div class="card card-outline card-primary">
     <div class="card-header">
-        <h3 class="card-title"><i class="fas fa-building ml-1"></i> ترتيب الأقسام الحالي</h3>
+        <h3 class="card-title"><i class="fas fa-building ml-1"></i>
+            <?= $state['mode'] === 'parallel_dept' ? 'حالة الأقسام (متوازي — كل قسم يتقدم باستقلال)' : 'ترتيب الأقسام الحالي (تسلسلي)' ?>
+        </h3>
     </div>
     <div class="card-body table-responsive p-0">
         <table class="table table-hover table-striped">
             <thead>
-                <tr><th>#</th><th>القسم</th><th>الحالة</th></tr>
+                <tr>
+                    <th>#</th>
+                    <th>القسم</th>
+                    <?php if ($state['mode'] === 'parallel_dept'): ?>
+                        <th>المجموعة الحالية</th>
+                        <th>تقدم</th>
+                    <?php else: ?>
+                        <th>الحالة</th>
+                    <?php endif; ?>
+                </tr>
             </thead>
             <tbody>
                 <?php foreach ($deptOrder as $i => $dept): ?>
-                <tr class="<?= !$dept['is_completed'] && $state['current_department'] && $dept['department_id'] == $state['current_department']['department_id'] ? 'table-success' : '' ?>">
+                <?php
+                    $isCurrentSeq = $state['mode'] === 'sequential_dept'
+                        && !$dept['is_completed']
+                        && $state['current_department']
+                        && $dept['department_id'] == $state['current_department']['department_id'];
+                ?>
+                <tr class="<?= $isCurrentSeq ? 'table-success' : '' ?>">
                     <td><?= $i + 1 ?></td>
                     <td><?= e($dept['department_name']) ?></td>
-                    <td>
-                        <?php if ($dept['is_completed']): ?>
-                            <span class="badge badge-success"><i class="fas fa-check"></i> مكتمل</span>
-                        <?php elseif ($state['current_department'] && $dept['department_id'] == $state['current_department']['department_id']): ?>
-                            <span class="badge badge-warning"><i class="fas fa-play"></i> جاري الآن</span>
-                        <?php else: ?>
-                            <span class="badge badge-secondary"><i class="fas fa-clock"></i> في الانتظار</span>
-                        <?php endif; ?>
-                    </td>
+
+                    <?php if ($state['mode'] === 'parallel_dept'): ?>
+                        <td>
+                            <?php
+                            $deptGroupId = $dept['current_group_id'] ?? null;
+                            $deptGroupName = '—';
+                            if ($deptGroupId) {
+                                $dg = \App\Models\PriorityGroup::find((int)$deptGroupId);
+                                if ($dg) $deptGroupName = e($dg['group_name']);
+                            }
+                            ?>
+                            <span class="badge badge-info"><?= $deptGroupName ?></span>
+                        </td>
+                        <td>
+                            <form method="POST" action="<?= url("/priority/advance-dept-group/{$dept['department_id']}") ?>" class="d-inline">
+                                <?= csrf_field() ?>
+                                <button type="submit" class="btn btn-warning btn-xs"
+                                        onclick="return confirm('هل تريد تقديم هذا القسم للمجموعة التالية؟')">
+                                    <i class="fas fa-forward"></i> المجموعة التالية
+                                </button>
+                            </form>
+                        </td>
+                    <?php else: ?>
+                        <td>
+                            <?php if ($dept['is_completed']): ?>
+                                <span class="badge badge-success"><i class="fas fa-check"></i> مكتمل</span>
+                            <?php elseif ($isCurrentSeq): ?>
+                                <span class="badge badge-warning"><i class="fas fa-play"></i> جاري الآن</span>
+                            <?php else: ?>
+                                <span class="badge badge-secondary"><i class="fas fa-clock"></i> في الانتظار</span>
+                            <?php endif; ?>
+                        </td>
+                    <?php endif; ?>
                 </tr>
                 <?php endforeach; ?>
             </tbody>
@@ -243,7 +284,7 @@ $__breadcrumb = [['label' => 'إدارة الأولوية']];
 <?php endif; ?>
 
 <!-- Direct Registration Management -->
-<?php if ($state['mode'] !== 'disabled'): ?>
+<?php if ($state['mode'] !== 'disabled' && can('priority.grant_register')): ?>
 <div class="card card-outline card-success">
     <div class="card-header">
         <h3 class="card-title"><i class="fas fa-user-check ml-1"></i> منح / سحب صلاحية التسجيل المباشر</h3>

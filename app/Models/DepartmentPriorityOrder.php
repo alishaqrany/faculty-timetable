@@ -6,7 +6,7 @@ class DepartmentPriorityOrder extends \Model
 {
     protected static string $table = 'department_priority_order';
     protected static string $primaryKey = 'id';
-    protected static array $fillable = ['department_id', 'sort_order', 'is_completed'];
+    protected static array $fillable = ['department_id', 'sort_order', 'is_completed', 'current_group_id'];
 
     /**
      * Get department ordering with department names.
@@ -64,11 +64,48 @@ class DepartmentPriorityOrder extends \Model
     }
 
     /**
-     * Reset all departments to not completed.
+     * Reset all departments to not completed and clear per-dept group tracking.
      */
     public static function resetAll(): void
     {
-        \Database::getInstance()->raw("UPDATE department_priority_order SET is_completed = 0");
+        \Database::getInstance()->raw(
+            "UPDATE department_priority_order SET is_completed = 0, current_group_id = NULL"
+        );
+    }
+
+    /**
+     * Get the current group ID for a specific department (parallel mode).
+     * Falls back to null if not set.
+     */
+    public static function getDeptCurrentGroupId(int $departmentId): ?int
+    {
+        $row = static::findWhere(['department_id' => $departmentId]);
+        if ($row && !empty($row['current_group_id'])) {
+            return (int) $row['current_group_id'];
+        }
+        return null;
+    }
+
+    /**
+     * Set the current group for a specific department (parallel mode).
+     */
+    public static function setDeptCurrentGroupId(int $departmentId, ?int $groupId): void
+    {
+        $row = static::findWhere(['department_id' => $departmentId]);
+        if ($row) {
+            static::updateById($row['id'], ['current_group_id' => $groupId]);
+        }
+    }
+
+    /**
+     * Initialize all departments with the first group of the given category.
+     */
+    public static function initAllDeptGroups(int $firstGroupId): void
+    {
+        \Database::getInstance()->execute(
+            "UPDATE department_priority_order SET current_group_id = ?, is_completed = 0",
+            [$firstGroupId]
+        );
     }
 
     /**

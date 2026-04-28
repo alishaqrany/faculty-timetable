@@ -66,6 +66,14 @@ class SchedulingController extends \Controller
         $this->authorize('scheduling.manage');
         $this->validateCsrf();
 
+        $user = $this->authUser();
+        $isAdmin = ($user['role_slug'] ?? '') === 'admin';
+        $memberId = $this->session->memberId();
+
+        if (!$isAdmin && $memberId && !\App\Services\PriorityService::canMemberRegister($memberId)) {
+            $this->redirect('/scheduling', 'غير مسموح لك بالتسجيل حالياً بناءً على نظام الأولوية', 'error');
+        }
+
         $data = $this->request->validate([
             'member_course_id' => 'required|integer',
             'classroom_id'     => 'required|integer',
@@ -150,8 +158,14 @@ class SchedulingController extends \Controller
 
         $user = $this->authUser();
         $isAdmin = ($user['role_slug'] ?? '') === 'admin';
-        if (!$isAdmin && (int)$entry['member_id'] !== (int)$this->session->memberId()) {
+        $memberId = $this->session->memberId();
+
+        if (!$isAdmin && (int)$entry['member_id'] !== (int)$memberId) {
             $this->redirect('/scheduling', 'غير مسموح', 'error');
+        }
+
+        if (!$isAdmin && $memberId && !PriorityService::canMemberRegister($memberId)) {
+            $this->redirect('/scheduling', 'ليس دورك حالياً في نظام الأولوية. لا يمكنك تعديل المواعيد الآن.', 'error');
         }
 
         $data = $this->request->validate([
@@ -196,8 +210,15 @@ class SchedulingController extends \Controller
         if (!$entry) $this->redirect('/scheduling', 'الإدخال غير موجود', 'error');
 
         $user = $this->authUser();
-        if (($user['role_slug'] ?? '') !== 'admin' && (int)$entry['member_id'] !== (int)$this->session->memberId()) {
+        $isAdmin = ($user['role_slug'] ?? '') === 'admin';
+        $memberId = $this->session->memberId();
+
+        if (!$isAdmin && (int)$entry['member_id'] !== (int)$memberId) {
             $this->redirect('/scheduling', 'غير مسموح', 'error');
+        }
+
+        if (!$isAdmin && $memberId && !PriorityService::canMemberRegister($memberId)) {
+            $this->redirect('/scheduling', 'ليس دورك حالياً في نظام الأولوية. لا يمكنك حذف المواعيد الآن.', 'error');
         }
 
         Timetable::destroy((int)$id);
