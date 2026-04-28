@@ -71,6 +71,14 @@ class HomeController extends \Controller
             $data['levels'] = Level::active();
             $data['members'] = Member::active();
             $data['classrooms'] = Classroom::active();
+
+            $filters['department_id'] = $this->resolveActiveId($data['departments'], 'department_id', $filters['department_id']);
+            $filters['level_id'] = $this->resolveActiveId($data['levels'], 'level_id', $filters['level_id']);
+            $filters['member_id'] = $this->resolveActiveId($data['members'], 'member_id', $filters['member_id']);
+            $filters['classroom_id'] = $this->resolveActiveId($data['classrooms'], 'classroom_id', $filters['classroom_id']);
+            $data['filters'] = $filters;
+            $data['hasFilter'] = !empty(array_filter($filters));
+
             $data['recentEntries'] = $db->fetchAll(
                 "SELECT s.subject_name, fm.member_name, c.classroom_name,
                         sess.day, sess.session_name, sess.start_time, sess.end_time,
@@ -139,5 +147,20 @@ class HomeController extends \Controller
     {
         $filtered = filter_var($value, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
         return $filtered === false ? null : (int) $filtered;
+    }
+
+    private function resolveActiveId(array $rows, string $idKey, ?int $value): ?int
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        foreach ($rows as $row) {
+            if ((int) ($row[$idKey] ?? 0) === $value) {
+                return $value;
+            }
+        }
+
+        return null;
     }
 }

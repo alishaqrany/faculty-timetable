@@ -126,6 +126,16 @@ function asset(string $path): string
     $basePath = app_base_path();
     $normalizedPath = ltrim($path, '/');
     $publicPrefix = rtrim(app_public_base_path(), '/');
+
+    if ($publicPrefix === '') {
+        $scriptFilename = realpath($_SERVER['SCRIPT_FILENAME'] ?? '');
+        $rootFrontController = realpath(APP_ROOT . '/index.php');
+
+        if ($scriptFilename !== false && $rootFrontController !== false && $scriptFilename === $rootFrontController) {
+            $publicPrefix = '/public';
+        }
+    }
+
     if ($basePath !== '' && $publicPrefix !== '' && strpos($publicPrefix, $basePath) === 0) {
         $publicPrefix = substr($publicPrefix, strlen($basePath));
     }
