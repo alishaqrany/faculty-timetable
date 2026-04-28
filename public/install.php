@@ -57,10 +57,6 @@ function detect_public_base_path(): string
 
 function build_app_config_content(string $appName, string $timezone, bool $debug = false): string
 {
-    $appNameExport = var_export($appName, true);
-    $timezoneExport = var_export($timezone, true);
-    $debugExport = $debug ? 'true' : 'false';
-
     return <<<'PHP'
 <?php
 
@@ -98,10 +94,10 @@ if ($basePath !== '' && substr($basePath, -strlen($publicSuffix)) === $publicSuf
     }
 }
 
-$basePathOverride = $normalizePath($env('APP_BASE_PATH'));
+$basePathOverride = $normalizePath($env('APP_BASE_PATH', __APP_BASE_PATH__));
 $publicBasePathOverride = $normalizePath($env('APP_PUBLIC_BASE_PATH'));
 
-$configuredUrl = trim((string) $env('APP_URL', ''));
+$configuredUrl = trim((string) $env('APP_URL', __APP_URL__));
 if ($configuredUrl !== '' && $basePathOverride === '') {
     $configuredPath = parse_url($configuredUrl, PHP_URL_PATH);
     if (is_string($configuredPath)) {
@@ -322,27 +318,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $appConfig = str_replace('__APP_NAME__', var_export($appName, true), $appConfig);
             $appConfig = str_replace('__TIMEZONE__', var_export($timezone, true), $appConfig);
             $appConfig = str_replace('__DEBUG__', 'false', $appConfig);
+            $appConfig = str_replace('__APP_URL__', var_export(rtrim($appUrl, '/'), true), $appConfig);
 
-            if ($appUrl !== '') {
-                $appConfig = str_replace(
-                    "$configuredUrl = trim((string) $env('APP_URL', ''));",
-                    "$configuredUrl = trim((string) $env('APP_URL', '" . addslashes(rtrim($appUrl, '/')) . "'));",
-                    $appConfig
-                );
-            }
-
+            $normalizedBasePath = '';
             if ($basePath !== '') {
                 $normalizedBasePath = '/' . trim(str_replace('\\', '/', $basePath), '/');
                 if ($normalizedBasePath === '/') {
                     $normalizedBasePath = '';
                 }
-
-                $appConfig = str_replace(
-                    "$basePathOverride = $normalizePath($env('APP_BASE_PATH'));",
-                    "$basePathOverride = $normalizePath($env('APP_BASE_PATH', '" . addslashes($normalizedBasePath) . "'));",
-                    $appConfig
-                );
             }
+
+            $appConfig = str_replace('__APP_BASE_PATH__', var_export($normalizedBasePath, true), $appConfig);
 
             file_put_contents(APP_ROOT . '/config/app.php', $appConfig);
 

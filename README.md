@@ -29,3 +29,21 @@ University timetable management system built with PHP and MySQL.
 - [Arabic Site Documentation](docs/complete-site-documentation-ar.md)
 - [Arabic Architecture Blueprint](docs/site-blueprint-ar.md)
 - [URL Compatibility Map](docs/url-compatibility-map.md)
+
+## Screenshots Preview
+
+### Login
+
+![Local login screen](docs/screenshots/local-login.png)
+
+### Dashboard
+
+![Local dashboard](docs/screenshots/local-dashboard.png)
+
+### Members
+
+![Local members page](docs/screenshots/local-members.png)
+
+### Departments
+
+![Local departments page](docs/screenshots/local-departments.png)
