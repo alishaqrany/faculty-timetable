@@ -7,6 +7,7 @@
 - [Tech Stack](#tech-stack)
 - [Project Structure](#project-structure)
 - [Local Setup](#local-setup)
+- [Screenshots](#screenshots)
 - [Main Modules](#main-modules)
 - [Typical Workflow](#typical-workflow)
 - [API Summary](#api-summary)
@@ -77,6 +78,26 @@ _legacy/        Older procedural version
 6. Sign in from:
 
    `http://localhost/timetable/public/login`
+
+## Screenshots
+
+The following screenshots were captured from a working local environment.
+
+### Login
+
+![Local login screen](docs/screenshots/local-login.png)
+
+### Dashboard
+
+![Local dashboard](docs/screenshots/local-dashboard.png)
+
+### Members
+
+![Local members page](docs/screenshots/local-members.png)
+
+### Departments
+
+![Local departments page](docs/screenshots/local-departments.png)
 
 ## Main Modules
 

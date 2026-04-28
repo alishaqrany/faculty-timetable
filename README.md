@@ -9,8 +9,8 @@ University timetable management system built with PHP and MySQL.
 
 ## Project At A Glance
 
-- Current application entry point: `public/index.php`
-- Installation wizard: `public/install.php`
+- Current application entry point: `public/index.php` internally, served from the project root
+- Installation wizard: `install.php` from the project root
 - Main application layers: `app/`, `core/`, `config/`, `public/`
 - Legacy reference code: `_legacy/`
 - Storage and runtime files: `storage/`
@@ -19,8 +19,8 @@ University timetable management system built with PHP and MySQL.
 
 1. Run Apache and MySQL.
 2. Use PHP 8.0 or newer.
-3. Open `http://localhost/timetable/public/install.php`.
-4. Complete the installer, then sign in from `http://localhost/timetable/public/login`.
+3. Open `http://localhost/timetable/install.php`.
+4. Complete the installer, then open `http://localhost/timetable/` for the public home page or `http://localhost/timetable/login` for الإدارة.
 
 ## Documentation
 
