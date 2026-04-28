@@ -24,12 +24,82 @@ function config(string $key, $default = null)
     return $config;
 }
 
+function app_base_path(): string
+{
+    static $basePath = null;
+    if ($basePath !== null) return $basePath;
+
+    $basePath = rtrim((string) config('app.base_path', ''), '/');
+    if ($basePath === '.' || $basePath === '/') {
+        $basePath = '';
+    }
+
+    $requestPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
+    $requestPath = is_string($requestPath) && $requestPath !== '' ? $requestPath : '/';
+
+    $publicSuffix = '/public';
+    if ($basePath !== '' && substr($basePath, -strlen($publicSuffix)) === $publicSuffix) {
+        $hasPrefix = $requestPath === $basePath || strpos($requestPath, $basePath . '/') === 0;
+        if (!$hasPrefix) {
+            $basePath = substr($basePath, 0, -strlen($publicSuffix));
+        }
+    }
+
+    return $basePath;
+}
+
+function app_base_url(): string
+{
+    static $baseUrl = null;
+    if ($baseUrl !== null) return $baseUrl;
+
+    $basePath = app_base_path();
+    $host = $_SERVER['HTTP_HOST'] ?? '';
+
+    if ($host !== '') {
+        $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+            || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
+        $scheme = $https ? 'https' : 'http';
+        $baseUrl = $scheme . '://' . $host . $basePath;
+        return $baseUrl;
+    }
+
+    $configuredUrl = rtrim((string) config('app.url', ''), '/');
+    if ($configuredUrl === '') {
+        $baseUrl = $basePath;
+        return $baseUrl;
+    }
+
+    $parts = parse_url($configuredUrl);
+    if ($parts === false || !isset($parts['scheme'], $parts['host'])) {
+        $baseUrl = $configuredUrl;
+        return $baseUrl;
+    }
+
+    $userInfo = '';
+    if (isset($parts['user'])) {
+        $userInfo = $parts['user'];
+        if (isset($parts['pass'])) {
+            $userInfo .= ':' . $parts['pass'];
+        }
+        $userInfo .= '@';
+    }
+
+    $authority = $parts['host'];
+    if (isset($parts['port'])) {
+        $authority .= ':' . $parts['port'];
+    }
+
+    $baseUrl = $parts['scheme'] . '://' . $userInfo . $authority . $basePath;
+    return $baseUrl;
+}
+
 /**
  * Generate a full URL from a path.
  */
 function url(string $path = ''): string
 {
-    $base = rtrim(config('app.url', ''), '/');
+    $base = rtrim(app_base_url(), '/');
     if ($path === '' || $path === '/') return $base . '/';
     return $base . '/' . ltrim($path, '/');
 }
@@ -39,7 +109,7 @@ function url(string $path = ''): string
  */
 function asset(string $path): string
 {
-    $base = rtrim(config('app.url', ''), '/');
+    $base = rtrim(app_base_url(), '/');
     $filePath = APP_ROOT . '/public/' . ltrim($path, '/');
     $version = file_exists($filePath) ? filemtime($filePath) : time();
     return $base . '/' . ltrim($path, '/') . '?v=' . $version;

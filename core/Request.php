@@ -84,12 +84,24 @@ class Request
     public function uri(): string
     {
         $uri = $this->server['REQUEST_URI'] ?? '/';
-        $basePath = config('app.base_path', '');
-        if ($basePath && strpos($uri, $basePath) === 0) {
+        $uri = is_string($uri) ? strtok($uri, '?') : '/';
+
+        $basePath = app_base_path();
+        if ($basePath !== '' && strpos($uri, $basePath) === 0) {
             $uri = substr($uri, strlen($basePath));
         }
-        $uri = strtok($uri, '?');
-        return '/' . trim($uri, '/');
+
+        $uri = '/' . trim((string) $uri, '/');
+
+        if ($uri === '/index.php') {
+            return '/';
+        }
+
+        if (strpos($uri, '/index.php/') === 0) {
+            $uri = substr($uri, strlen('/index.php'));
+        }
+
+        return $uri === '' ? '/' : $uri;
     }
 
     public function queryString(): string

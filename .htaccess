@@ -8,6 +8,9 @@
     # Redirect root to public/
     RewriteRule ^$ public/ [L]
 
+    # Allow requests that already target the public directory to continue there
+    RewriteRule ^public(?:/.*)?$ - [L]
+
     # Pass real files/dirs through, forward everything else to public/
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d

@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.rtl.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/svg+xml" href="<?= url('/assets/favicon.svg') ?>">
     <link rel="stylesheet" href="<?= url('/assets/css/custom.css') ?>">
 
     <style>

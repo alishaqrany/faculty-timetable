@@ -14,6 +14,42 @@ session_start();
 
 define('APP_ROOT', dirname(__DIR__));
 
+function detect_app_base_path(): string
+{
+    $scriptDir = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? '/'), '/\\');
+    if ($scriptDir === '.' || $scriptDir === '/') {
+        $scriptDir = '';
+    }
+
+    $requestPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
+    $requestPath = is_string($requestPath) && $requestPath !== '' ? $requestPath : '/';
+
+    $publicSuffix = '/public';
+    if ($scriptDir !== '' && substr($scriptDir, -strlen($publicSuffix)) === $publicSuffix) {
+        $hasPrefix = $requestPath === $scriptDir || strpos($requestPath, $scriptDir . '/') === 0;
+        if (!$hasPrefix) {
+            $scriptDir = substr($scriptDir, 0, -strlen($publicSuffix));
+        }
+    }
+
+    return $scriptDir;
+}
+
+function detect_app_url(): string
+{
+    $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+        || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
+    $scheme = $https ? 'https' : 'http';
+    return $scheme . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . detect_app_base_path();
+}
+
+if (version_compare(PHP_VERSION, '8.0.0', '<')) {
+    http_response_code(503);
+    header('Content-Type: text/html; charset=UTF-8');
+    echo '<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>إصدار PHP غير مدعوم</title></head><body style="font-family:Tahoma,Arial,sans-serif;padding:24px;line-height:1.8"><h2>إصدار PHP غير مدعوم</h2><p>لا يمكن تشغيل معالج التثبيت لأن النظام يحتاج إلى PHP 8.0 أو أحدث.</p><p>الإصدار الحالي على الخادم: ' . htmlspecialchars(PHP_VERSION, ENT_QUOTES, 'UTF-8') . '</p></body></html>';
+    exit;
+}
+
 // Load core Database class
 require_once APP_ROOT . '/core/Database.php';
 
@@ -183,13 +219,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             // Auto-detect URL if empty
             if (!$appUrl) {
-                $proto = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-                $host  = $_SERVER['HTTP_HOST'] ?? 'localhost';
-                $dir   = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
-                $appUrl = $proto . '://' . $host . $dir;
+                $appUrl = detect_app_url();
             }
             if (!$basePath) {
-                $basePath = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
+                $basePath = detect_app_base_path();
             }
 
             // Write config/app.php
@@ -235,7 +268,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // ─── Requirements Check Data ────────────────────────────────────────────────────
 $requirements = [
-    ['name' => 'PHP >= 7.4',            'ok' => version_compare(PHP_VERSION, '7.4.0', '>=')],
+    ['name' => 'PHP >= 8.0',            'ok' => version_compare(PHP_VERSION, '8.0.0', '>=')],
     ['name' => 'MySQLi Extension',       'ok' => extension_loaded('mysqli')],
     ['name' => 'Session Extension',      'ok' => extension_loaded('session')],
     ['name' => 'JSON Extension',         'ok' => extension_loaded('json')],
@@ -252,11 +285,8 @@ $isInstalled = file_exists(APP_ROOT . '/storage/installed.lock');
 $autoUrl  = '';
 $autoBase = '';
 if ($step === '5') {
-    $proto    = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-    $host     = $_SERVER['HTTP_HOST'] ?? 'localhost';
-    $dir      = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
-    $autoUrl  = $proto . '://' . $host . $dir;
-    $autoBase = $dir;
+    $autoUrl  = detect_app_url();
+    $autoBase = detect_app_base_path();
 }
 
 // Read current app config for step 5 defaults
@@ -273,6 +303,7 @@ if (!is_array($appCfg)) $appCfg = [];
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.rtl.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
     <style>
         body { font-family: 'Tajawal', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
         .install-card { max-width: 700px; margin: 40px auto; border-radius: 15px; box-shadow: 0 20px 60px rgba(0,0,0,.3); }
