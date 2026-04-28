@@ -107,15 +107,19 @@ body {
         margin-left: 0 !important;
     }
 
-    .main-sidebar,
-    .main-sidebar::before {
-        margin-right: calc(-1 * var(--sidebar-width));
-        margin-left: 0;
+    /* AdminLTE mobile RTL sidebar logic overrides */
+    html[dir="rtl"] body.app-modern-theme .main-sidebar,
+    html[dir="rtl"] body.app-modern-theme .main-sidebar::before {
+        transform: translateX(100%);
+        transition: transform 0.3s ease-in-out;
+        margin-right: 0 !important;
+        box-shadow: none !important;
     }
 
-    .sidebar-open .main-sidebar,
-    .sidebar-open .main-sidebar::before {
-        margin-right: 0;
+    html[dir="rtl"] body.app-modern-theme.sidebar-open .main-sidebar,
+    html[dir="rtl"] body.app-modern-theme.sidebar-open .main-sidebar::before {
+        transform: translateX(0);
+        box-shadow: -18px 0 32px rgba(18, 39, 56, 0.16) !important;
     }
 }
 
@@ -1118,24 +1122,24 @@ html[dir="rtl"] body.app-modern-theme .card-footer.text-left {
     text-align: right !important;
 }
 
-html[dir="rtl"] body.app-modern-theme:not(.sidebar-collapse) .content-wrapper,
-html[dir="rtl"] body.app-modern-theme:not(.sidebar-collapse) .main-footer {
-    margin-right: var(--sidebar-width) !important;
-    margin-left: 0 !important;
-}
-
-html[dir="rtl"] body.app-modern-theme:not(.sidebar-collapse) .main-header.navbar {
-    margin-right: calc(var(--sidebar-width) + 0.85rem) !important;
-    margin-left: 0.85rem !important;
-}
-
-html[dir="rtl"] body.app-modern-theme.sidebar-collapse .main-header.navbar {
-    margin-right: 0.85rem !important;
-    margin-left: 0.85rem !important;
-}
-
-/* Fix mini sidebar for RTL in desktop */
+/* Fix sidebar for RTL in desktop */
 @media (min-width: 992px) {
+    html[dir="rtl"] body.app-modern-theme:not(.sidebar-collapse) .content-wrapper,
+    html[dir="rtl"] body.app-modern-theme:not(.sidebar-collapse) .main-footer {
+        margin-right: var(--sidebar-width) !important;
+        margin-left: 0 !important;
+    }
+
+    html[dir="rtl"] body.app-modern-theme:not(.sidebar-collapse) .main-header.navbar {
+        margin-right: calc(var(--sidebar-width) + 0.85rem) !important;
+        margin-left: 0.85rem !important;
+    }
+
+    html[dir="rtl"] body.app-modern-theme.sidebar-collapse .main-header.navbar {
+        margin-right: 0.85rem !important;
+        margin-left: 0.85rem !important;
+    }
+
     html[dir="rtl"] body.app-modern-theme.sidebar-mini.sidebar-collapse .content-wrapper,
     html[dir="rtl"] body.app-modern-theme.sidebar-mini.sidebar-collapse .main-footer {
         margin-right: var(--sidebar-collapsed-width) !important;
@@ -1341,5 +1345,141 @@ html[dir="rtl"] body.app-modern-theme .sidebar-rebuild-v3 .sidebar-rebuild-link 
     left: 0.85rem;
     top: 50%;
     transform: translateY(-50%);
+}
+
+/* ===== Enhanced Responsive Support for Different Screen Sizes ===== */
+
+/* Tablets & Mobile Landscape (max-width: 991.98px) */
+@media (max-width: 991.98px) {
+    body.app-modern-theme .card-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+    
+    body.app-modern-theme .card-header .card-tools {
+        width: 100%;
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    body.app-modern-theme .card-body {
+        padding: 0.85rem;
+    }
+}
+
+/* Mobile Portrait (max-width: 767.98px) */
+@media (max-width: 767.98px) {
+    /* Optimize Content Paddings */
+    body.app-modern-theme .content .container-fluid {
+        padding-right: 0.4rem;
+        padding-left: 0.4rem;
+    }
+
+    body.app-modern-theme .content-header {
+        padding: 0.8rem 0.25rem;
+        text-align: center;
+    }
+
+    html[dir="rtl"] body.app-modern-theme .content-header .breadcrumb {
+        justify-content: center;
+        margin-top: 0.5rem;
+        font-size: 0.85rem;
+    }
+    
+    html[dir="rtl"] body.app-modern-theme .content-header .col-sm-6 {
+        display: flex;
+        justify-content: center !important;
+    }
+
+    /* Form Controls for Touch Devices (Apple/Android standard min touch target) */
+    body.app-modern-theme .form-control,
+    body.app-modern-theme .custom-select,
+    body.app-modern-theme .select2-container--bootstrap4 .select2-selection,
+    body.app-modern-theme .btn:not(.btn-xs):not(.btn-sm) {
+        min-height: 44px;
+    }
+
+    /* Cards */
+    body.app-modern-theme .card {
+        border-radius: 12px;
+        margin-bottom: 0.8rem;
+    }
+
+    body.app-modern-theme .card-header {
+        padding: 0.75rem;
+    }
+
+    body.app-modern-theme .card-header .card-title {
+        font-size: 1.1rem;
+    }
+
+    /* Tables */
+    body.app-modern-theme .table th, 
+    body.app-modern-theme .table td {
+        padding: 0.5rem 0.6rem;
+        font-size: 0.88rem;
+    }
+
+    body.app-modern-theme .card-body > .table, 
+    body.app-modern-theme .table-responsive > .table {
+        min-width: 100% !important; /* Allow tables to shrink if columns are few */
+        white-space: nowrap; /* Prevent squishing text in columns, triggers scroll instead */
+    }
+    
+    body.app-modern-theme .btn-xs {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.8rem;
+    }
+
+    /* DataTables adjustments */
+    body.app-modern-theme .dataTables_wrapper .row {
+        margin-left: 0;
+        margin-right: 0;
+    }
+
+    body.app-modern-theme .dataTables_wrapper .col-sm-12 {
+        padding-left: 0;
+        padding-right: 0;
+    }
+
+    html[dir="rtl"] body.app-modern-theme .dataTables_wrapper .dataTables_filter,
+    html[dir="rtl"] body.app-modern-theme .dataTables_wrapper .dataTables_length {
+        text-align: center !important;
+        margin-bottom: 0.8rem;
+    }
+    
+    html[dir="rtl"] body.app-modern-theme .dataTables_wrapper .dataTables_paginate {
+        display: flex;
+        justify-content: center;
+        margin-top: 0.5rem;
+    }
+}
+
+/* Smallest Mobile Devices (max-width: 575.98px) */
+@media (max-width: 575.98px) {
+    body.app-modern-theme .small-box h3 {
+        font-size: 1.6rem;
+    }
+
+    body.app-modern-theme .small-box .icon > i {
+        font-size: 48px;
+        top: 15px;
+    }
+
+    body.app-modern-theme .main-footer {
+        flex-direction: column;
+        text-align: center;
+        padding: 0.8rem;
+    }
+
+    body.app-modern-theme .main-footer > div {
+        margin-bottom: 0.5rem;
+    }
+    
+    body.app-modern-theme .main-footer .d-flex {
+        flex-direction: column !important;
+        align-items: center !important;
+    }
 }
 
