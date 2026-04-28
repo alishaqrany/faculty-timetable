@@ -81,10 +81,15 @@ class Timetable extends \Model
         $data = [];
 
         $sessions = \Database::getInstance()->fetchAll(
-            "SELECT session_id, session_name, day, start_time, end_time
+            "SELECT MIN(session_id) AS session_id,
+                    session_name,
+                    start_time,
+                    end_time,
+                    CONCAT(session_name, '|', start_time, '|', end_time) AS slot_key
              FROM sessions
              WHERE is_active = 1
-             ORDER BY FIELD(day,'الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس'), start_time"
+             GROUP BY session_name, start_time, end_time
+             ORDER BY start_time"
         );
 
         foreach ($entries as $entry) {
@@ -93,11 +98,9 @@ class Timetable extends \Model
             $sections[$secName] = true;
             $pivot[$key][$secName] = $entry;
 
-            // For timetable view compatibility: one cell per (day, session_id)
-            // may contain multiple entries when overlaps exist.
-            $sessionId = (int)($entry['session_id'] ?? 0);
-            if ($sessionId > 0) {
-                $data[$entry['day']][$sessionId][] = $entry;
+            $slotKey = ($entry['session_name'] ?? '') . '|' . ($entry['start_time'] ?? '') . '|' . ($entry['end_time'] ?? '');
+            if ($slotKey !== '||') {
+                $data[$entry['day']][$slotKey][] = $entry;
             }
         }
 

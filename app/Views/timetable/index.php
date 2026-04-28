@@ -120,7 +120,7 @@ $__breadcrumb = [['label' => 'الجدول الدراسي']];
                         <?php foreach ($pivotData['sessions'] as $sess): ?>
                             <td>
                                 <?php
-                                $cellEntries = $pivotData['data'][$day][$sess['session_id']] ?? [];
+                                $cellEntries = $pivotData['data'][$day][$sess['slot_key']] ?? [];
                                 if (!empty($cellEntries)):
                                 ?>
                                     <?php foreach ($cellEntries as $idx => $cell): ?>

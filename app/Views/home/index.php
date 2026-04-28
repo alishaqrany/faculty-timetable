@@ -465,7 +465,7 @@ $ctaLabel = $auth ? 'دخول لوحة التحكم' : 'تسجيل الدخول 
                                                 <td class="public-pivot-day"><?= e($day) ?></td>
                                                 <?php foreach ($pivotData['sessions'] as $session): ?>
                                                     <td>
-                                                        <?php $cellEntries = $pivotData['data'][$day][$session['session_id']] ?? []; ?>
+                                                        <?php $cellEntries = $pivotData['data'][$day][$session['slot_key']] ?? []; ?>
                                                         <?php if (!empty($cellEntries)): ?>
                                                             <?php foreach ($cellEntries as $cellEntry): ?>
                                                                 <?php $entryClass = (($cellEntry['assignment_type'] ?? '') === 'عملي') ? 'public-entry-cell public-entry-practical' : 'public-entry-cell'; ?>

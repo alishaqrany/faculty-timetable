@@ -1,20 +1,23 @@
 # ─── Timetable Management System v2 ──────────────────────────
-# Redirects all requests to public/ directory
-# This allows the app to run from a subfolder like /timetable/
+# Serves the application from the project root while keeping /public internal.
 
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
-    # Redirect root to public/
-    RewriteRule ^$ public/ [L]
-
     # Allow requests that already target the public directory to continue there
     RewriteRule ^public(?:/.*)?$ - [L]
 
-    # Pass real files/dirs through, forward everything else to public/
-    RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteRule ^(.+)$ public/$1 [L]
+    # Expose assets and installer from public/ without forcing /public in URLs
+    RewriteRule ^(assets/.*|install\.php)$ public/$1 [L,QSA]
+
+    # Pass through real files and directories in the project root
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # Route application requests through the root front controller
+    RewriteRule ^$ index.php [L,QSA]
+    RewriteRule ^(.+)$ index.php [L,QSA]
 </IfModule>
 
 # ─── Security: Deny access to sensitive directories ─────────
