@@ -46,11 +46,15 @@ class Application
 
     public function run(): void
     {
-        $request = new Request();
-        $method = $request->method();
-        $uri = $request->uri();
+        try {
+            $request = new Request();
+            $method = $request->method();
+            $uri = $request->uri();
 
-        $this->router->dispatch($method, $uri);
+            $this->router->dispatch($method, $uri);
+        } catch (\Throwable $exception) {
+            $this->handleException($exception);
+        }
     }
 
     private function loadCore(): void
@@ -76,5 +80,30 @@ class Application
                 $GLOBALS['__app_config'][$file] = require $path;
             }
         }
+    }
+
+    private function handleException(\Throwable $exception): void
+    {
+        error_log((string) $exception);
+
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
+
+        $isDatabaseIssue = Database::isConnectionException($exception);
+        $statusCode = $isDatabaseIssue ? 503 : 500;
+
+        if (!headers_sent()) {
+            http_response_code($statusCode);
+            header('Content-Type: text/html; charset=UTF-8');
+        }
+
+        $view = new View();
+        echo $view->render($isDatabaseIssue ? 'errors.database-unavailable' : 'errors.server-error', [
+            'statusCode' => $statusCode,
+            'homeUrl' => url('/'),
+            'retryUrl' => url($_SERVER['REQUEST_URI'] ?? '/'),
+            'installUrl' => url('/install.php'),
+        ]);
     }
 }

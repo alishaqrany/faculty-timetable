@@ -3,6 +3,7 @@
 class Database
 {
     private static ?Database $instance = null;
+    private const CONNECTION_ERROR_CODES = [1044, 1045, 1049, 1698, 2002, 2003, 2005, 2006];
     private mysqli $conn;
 
     private function __construct(string $host, string $user, string $pass, string $dbname)
@@ -181,6 +182,34 @@ class Database
     public function escape(string $value): string
     {
         return $this->conn->real_escape_string($value);
+    }
+
+    public static function isConnectionException(\Throwable $exception): bool
+    {
+        if (!$exception instanceof mysqli_sql_exception) {
+            return false;
+        }
+
+        if (in_array((int) $exception->getCode(), self::CONNECTION_ERROR_CODES, true)) {
+            return true;
+        }
+
+        $message = strtolower($exception->getMessage());
+        $patterns = [
+            'access denied for user',
+            'connection refused',
+            'unknown database',
+            'can\'t connect to',
+            'no such file or directory',
+        ];
+
+        foreach ($patterns as $pattern) {
+            if (str_contains($message, $pattern)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function detectTypes(array $params): string

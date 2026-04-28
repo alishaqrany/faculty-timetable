@@ -88,16 +88,20 @@ class Controller
     {
         static $user = null;
         if ($user === null && $this->session->isLoggedIn()) {
-            $user = Database::getInstance()->fetch(
-                "SELECT u.*, r.role_name, r.role_slug, fm.member_name, fm.department_id
-                 FROM users u
-                 LEFT JOIN roles r ON u.role_id = r.id
-                 LEFT JOIN faculty_members fm ON u.member_id = fm.member_id
-                 WHERE u.id = ? LIMIT 1",
-                [$this->session->userId()]
-            );
+            try {
+                $user = Database::getInstance()->fetch(
+                    "SELECT u.*, r.role_name, r.role_slug, fm.member_name, fm.department_id
+                     FROM users u
+                     LEFT JOIN roles r ON u.role_id = r.id
+                     LEFT JOIN faculty_members fm ON u.member_id = fm.member_id
+                     WHERE u.id = ? LIMIT 1",
+                    [$this->session->userId()]
+                );
+            } catch (\Throwable $e) {
+                $user = false;
+            }
         }
-        return $user;
+        return $user ?: null;
     }
 
     /**
