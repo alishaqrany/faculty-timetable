@@ -109,6 +109,7 @@ $router->group('', ['AuthMiddleware', 'CsrfMiddleware'], function (Router $route
     $router->get('/settings/data-transfer/sample-sql', 'DataTransferController@downloadSampleSql');
     $router->post('/settings/data-transfer/import-sql', 'DataTransferController@importSql');
     $router->post('/settings/data-transfer/import-excel', 'DataTransferController@importExcel');
+    $router->post('/settings/data-transfer/reset-system', 'DataTransferController@resetSystem');
 
     // Backups & Cloud Sync
     $router->get('/backups', 'BackupController@index');

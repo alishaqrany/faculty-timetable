@@ -93,16 +93,26 @@ class DataTransferController extends \Controller
     public function downloadSampleSql(): void
     {
         $this->authorize('settings.manage');
+        header('Content-Type: application/sql; charset=utf-8');
+        header('Content-Disposition: attachment; filename="' . DataTransferService::sampleSqlFilename() . '"');
+        echo DataTransferService::generateSampleSqlContent();
+        exit;
+    }
 
-        $path = APP_ROOT . '/storage/import_samples/sample_dummy_data.sql';
-        if (!file_exists($path)) {
-            $this->redirect('/settings', 'ملف البيانات التجريبي غير موجود.', 'error');
-            return;
+    public function resetSystem(): void
+    {
+        $this->authorize('settings.manage');
+        $this->validateCsrf();
+
+        try {
+            DataTransferService::resetSystem();
+            AuditService::log('DELETE', 'data_transfer_reset');
+            $this->redirect('/settings', 'تمت إعادة تهيئة النظام ومسح البيانات التشغيلية مع الإبقاء على حسابات المدير والإعدادات الأساسية.');
+        } catch (\Throwable $e) {
+            error_log('DataTransfer resetSystem failed: ' . $e->getMessage());
+            $this->redirect('/settings', 'فشلت إعادة التهيئة. راجع سجل النظام للتحقق من التفاصيل.', 'error');
         }
 
-        header('Content-Type: application/sql; charset=utf-8');
-        header('Content-Disposition: attachment; filename="sample_dummy_data.sql"');
-        readfile($path);
         exit;
     }
 }

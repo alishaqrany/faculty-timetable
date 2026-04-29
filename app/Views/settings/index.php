@@ -111,9 +111,26 @@ $__breadcrumb = [['label' => 'الإعدادات']];
         <h3 class="card-title"><i class="fas fa-vial ml-1"></i> ملف بيانات تجريبي</h3>
     </div>
     <div class="card-body">
-        <p class="text-muted mb-3">يمكنك تنزيل ملف SQL تجريبي يحتوي بيانات وهمية لاختبار كامل النظام (الأقسام، الشعب، المواد، الجلسات، الجداول، وحسابات تجريبية).</p>
+        <p class="text-muted mb-2">يمكنك تنزيل ملف SQL غنيّ للاختبار يحتوي على 4 فرق دراسية، 4 أقسام، 24 شعبة، 192 سكشن، 64 عضو هيئة تدريس/هيئة معاونة، 64 مقرراً، و24 صفاً جاهزاً في الجدول.</p>
+        <p class="text-muted mb-3">يتضمن الملف أيضاً 8 حسابات تجريبية للأقسام بصلاحيات رئيس قسم وعضو هيئة تدريس، وكلمة المرور الموحدة لها هي <code>password</code>.</p>
         <a href="<?= url('/settings/data-transfer/sample-sql') ?>" class="btn btn-outline-dark">
-            <i class="fas fa-file-download ml-1"></i> تنزيل sample_dummy_data.sql
+            <i class="fas fa-file-download ml-1"></i> تنزيل ملف البيانات التجريبية
         </a>
+    </div>
+</div>
+
+<div class="card card-danger card-outline mt-4">
+    <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-eraser ml-1"></i> إعادة تهيئة النظام</h3>
+    </div>
+    <div class="card-body">
+        <p class="text-muted mb-3">يحذف هذا الإجراء البيانات التشغيلية الحالية مثل الأقسام والمقررات والشعب والسكاشن والجداول والتكليفات والتنبيهات، ثم يعيد إنشاء القيم الأساسية اللازمة للتشغيل. سيتم الإبقاء على حسابات المدير والصلاحيات والإعدادات العامة.</p>
+
+        <form method="POST" action="<?= url('/settings/data-transfer/reset-system') ?>" onsubmit="return confirm('سيتم مسح البيانات التشغيلية الحالية وإعادة النظام إلى حالة ابتدائية قابلة للاستخدام مع الإبقاء على حسابات المدير. هل تريد المتابعة؟');">
+            <?= csrf_field() ?>
+            <button type="submit" class="btn btn-outline-danger">
+                <i class="fas fa-trash-restore ml-1"></i> إعادة التهيئة ومسح البيانات
+            </button>
+        </form>
     </div>
 </div>
