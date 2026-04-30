@@ -89,7 +89,7 @@
                 <span class="d-block d-sm-inline text-muted">جميع الحقوق محفوظة.</span>
             </div>
             <div class="text-muted small mt-2 mt-sm-0">
-                لوحة إدارة الجداول والجدولة الأكاديمية
+                لوحة إدارة الجداول وتسكين المحاضرات
             </div>
         </div>
     </footer>

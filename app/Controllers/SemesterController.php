@@ -263,6 +263,16 @@ class SemesterController extends \Controller
         $this->redirect('/semesters', 'تم توليد الفصول الدراسية بنجاح ✓');
     }
 
+    /**
+     * AJAX: Return semesters for a given academic year as JSON.
+     */
+    public function byYear(): void
+    {
+        $yearId = (int)$this->request->input('academic_year_id');
+        $semesters = $yearId > 0 ? Semester::forYear($yearId) : Semester::allWithYear();
+        $this->json(['success' => true, 'semesters' => $semesters]);
+    }
+
     public function destroy(string $id): void
     {
         $this->authorize('semesters.manage');

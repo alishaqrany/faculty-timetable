@@ -207,10 +207,10 @@ $__breadcrumb = [['label' => 'إدارة الأولوية']];
         <a href="<?= url('/scheduling') ?>" class="small-box bg-success">
             <div class="inner">
                 <h3><i class="fas fa-calendar-check"></i></h3>
-                <p>الجدولة</p>
+                <p>التسكين</p>
             </div>
             <div class="icon"><i class="fas fa-calendar-alt"></i></div>
-            <span class="small-box-footer">الذهاب للجدولة <i class="fas fa-arrow-circle-left"></i></span>
+            <span class="small-box-footer">الذهاب للتسكين <i class="fas fa-arrow-circle-left"></i></span>
         </a>
     </div>
 </div>

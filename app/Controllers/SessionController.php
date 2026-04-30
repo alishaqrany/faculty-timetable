@@ -90,41 +90,83 @@ class SessionController extends \Controller
     }
 
     /**
-     * Generate default sessions (5 days × 5 time slots).
+     * Generate default sessions based on user-selected count and duration.
      */
     public function generate(): void
     {
         $this->authorize('sessions.create');
         $this->validateCsrf();
 
+        $sessionsPerDay = (int)$this->request->input('sessions_per_day', 5);
+        $sessionsPerDay = max(1, min(8, $sessionsPerDay));
+
+        $durationHours = (int)$this->request->input('duration_hours', 2);
+        if (!in_array($durationHours, [1, 2, 3], true)) {
+            $durationHours = 2;
+        }
+
         $days = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس'];
-        $slots = [
-            ['name' => 'الفترة الأولى',  'start' => '08:00:00', 'end' => '10:00:00'],
-            ['name' => 'الفترة الثانية', 'start' => '10:00:00', 'end' => '12:00:00'],
-            ['name' => 'الفترة الثالثة', 'start' => '12:00:00', 'end' => '14:00:00'],
-            ['name' => 'الفترة الرابعة', 'start' => '14:00:00', 'end' => '16:00:00'],
-            ['name' => 'الفترة الخامسة', 'start' => '16:00:00', 'end' => '18:00:00'],
+        $names = [
+            'الفترة الأولى', 'الفترة الثانية', 'الفترة الثالثة', 'الفترة الرابعة',
+            'الفترة الخامسة', 'الفترة السادسة', 'الفترة السابعة', 'الفترة الثامنة',
         ];
+
+        $slots = [];
+        $startMin = 8 * 60; // 08:00
+        for ($i = 0; $i < $sessionsPerDay; $i++) {
+            $endMin = $startMin + ($durationHours * 60);
+            $slots[] = [
+                'name'  => $names[$i],
+                'start' => sprintf('%02d:%02d:00', intdiv($startMin, 60), $startMin % 60),
+                'end'   => sprintf('%02d:%02d:00', intdiv($endMin, 60),   $endMin   % 60),
+            ];
+            $startMin = $endMin; // consecutive sessions, no break
+        }
+
+        // Remove existing sessions (and dependent timetable rows) before regenerating
+        $db = \Database::getInstance();
+        $db->raw("DELETE FROM `timetable` WHERE `session_id` IN (SELECT `session_id` FROM `sessions`)");
+        $db->raw("DELETE FROM `sessions`");
 
         $count = 0;
         foreach ($days as $day) {
             foreach ($slots as $slot) {
-                $exists = Session::findWhere(['day' => $day, 'start_time' => $slot['start']]);
-                if (!$exists) {
-                    Session::create([
-                        'day'          => $day,
-                        'session_name' => $slot['name'],
-                        'start_time'   => $slot['start'],
-                        'end_time'     => $slot['end'],
-                        'duration'     => 2,
-                        'is_active'    => 1,
-                    ]);
-                    $count++;
-                }
+                Session::create([
+                    'day'          => $day,
+                    'session_name' => $slot['name'],
+                    'start_time'   => $slot['start'],
+                    'end_time'     => $slot['end'],
+                    'duration'     => $durationHours,
+                    'is_active'    => 1,
+                ]);
+                $count++;
             }
         }
 
-        AuditService::log('GENERATE', 'sessions', null, null, ['count' => $count]);
+        AuditService::log('GENERATE', 'sessions', null, null, [
+            'count'            => $count,
+            'sessions_per_day' => $sessionsPerDay,
+            'duration_hours'   => $durationHours,
+        ]);
         $this->redirect('/sessions', "تم إنشاء $count فترة زمنية بنجاح ✓");
+    }
+
+    /**
+     * Delete all sessions (and dependent timetable rows to respect FK constraints).
+     */
+    public function destroyAll(): void
+    {
+        $this->authorize('sessions.delete');
+        $this->validateCsrf();
+
+        $db = \Database::getInstance();
+        $count = (int)($db->fetch("SELECT COUNT(*) AS cnt FROM `sessions`")['cnt'] ?? 0);
+
+        // Must remove dependent timetable rows first (FK: timetable.session_id → sessions.session_id)
+        $db->raw("DELETE FROM `timetable` WHERE `session_id` IN (SELECT `session_id` FROM `sessions`)");
+        $db->raw("DELETE FROM `sessions`");
+
+        AuditService::log('DELETE_ALL', 'sessions', null, null, ['deleted_count' => $count]);
+        $this->redirect('/sessions', "تم حذف $count فترة زمنية بنجاح ✓");
     }
 }

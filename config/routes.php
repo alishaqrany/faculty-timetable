@@ -34,10 +34,12 @@ $router->group('', ['AuthMiddleware', 'CsrfMiddleware'], function (Router $route
     $router->get('/api/sections/by-division', 'SectionController@byDivision');
     $router->resource('/classrooms', 'ClassroomController');
     $router->post('/sessions/generate', 'SessionController@generate');
+    $router->post('/sessions/destroy-all', 'SessionController@destroyAll');
     $router->resource('/sessions', 'SessionController');
     $router->resource('/member-courses', 'MemberCourseController');
 
     // Scheduling
+    $router->get('/scheduling/ajax-filter', 'SchedulingController@ajaxFilter');
     $router->get('/scheduling', 'SchedulingController@index');
     $router->post('/scheduling', 'SchedulingController@store');
     $router->get('/scheduling/{id}/edit', 'SchedulingController@edit');
@@ -75,6 +77,7 @@ $router->group('', ['AuthMiddleware', 'CsrfMiddleware'], function (Router $route
     $router->post('/priority/revoke-register/{id}', 'PriorityController@revokeMemberRegister');
 
     // Timetable
+    $router->get('/timetable/ajax-filter', 'TimetableController@ajaxFilter');
     $router->get('/timetable', 'TimetableController@index');
     $router->get('/timetable/export', 'TimetableController@export');
 
@@ -83,6 +86,7 @@ $router->group('', ['AuthMiddleware', 'CsrfMiddleware'], function (Router $route
     $router->post('/academic-years/{id}/set-current', 'AcademicYearController@setCurrent');
 
     // Semesters
+    $router->get('/semesters/by-year', 'SemesterController@byYear');
     $router->post('/semesters/generate-for-year', 'SemesterController@generateForYear');
     $router->resource('/semesters', 'SemesterController');
     $router->post('/semesters/{id}/set-current', 'SemesterController@setCurrent');

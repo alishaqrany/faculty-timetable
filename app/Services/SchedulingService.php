@@ -205,8 +205,8 @@ class SchedulingService
                 // Send notification
                 NotificationService::send(
                     $next['user_id'],
-                    'دورك في الجدولة',
-                    'تم تمرير دور الجدولة إليك. يمكنك الآن إضافة حصصك في الجدول.',
+                    'دورك في التسكين',
+                    'تم تمرير دور التسكين إليك. يمكنك الآن تسكين محاضراتك في الجدول.',
                     'info',
                     '/scheduling'
                 );

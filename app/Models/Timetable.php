@@ -59,6 +59,14 @@ class Timetable extends \Model
             $sql .= " AND c.classroom_id = ?";
             $params[] = $filters['classroom_id'];
         }
+        if (!empty($filters['academic_year_id'])) {
+            $sql .= " AND t.academic_year_id = ?";
+            $params[] = $filters['academic_year_id'];
+        }
+        if (!empty($filters['semester_id'])) {
+            $sql .= " AND t.semester_id = ?";
+            $params[] = $filters['semester_id'];
+        }
 
         $sql .= " ORDER BY FIELD(sess.day,'الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس'), sess.start_time";
 
@@ -68,12 +76,12 @@ class Timetable extends \Model
     /**
      * Build pivot table for display: rows = (day, session), cols = sections.
      */
-    public static function pivotTable(int $departmentId, int $levelId): array
+    public static function pivotTable(int $departmentId, int $levelId, array $extraFilters = []): array
     {
-        $entries = static::allWithDetails([
+        $entries = static::allWithDetails(array_merge([
             'department_id' => $departmentId,
             'level_id'      => $levelId,
-        ]);
+        ], $extraFilters));
 
         $days = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس'];
         $sections = [];

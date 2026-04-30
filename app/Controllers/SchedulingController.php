@@ -5,12 +5,14 @@ require_once APP_ROOT . '/app/Models/Timetable.php';
 require_once APP_ROOT . '/app/Models/MemberCourse.php';
 require_once APP_ROOT . '/app/Models/Classroom.php';
 require_once APP_ROOT . '/app/Models/Session.php';
+require_once APP_ROOT . '/app/Models/AcademicYear.php';
+require_once APP_ROOT . '/app/Models/Semester.php';
 require_once APP_ROOT . '/app/Services/SchedulingService.php';
 require_once APP_ROOT . '/app/Services/PriorityService.php';
 require_once APP_ROOT . '/app/Services/AuditService.php';
 require_once APP_ROOT . '/app/Services/NotificationService.php';
 
-use App\Models\{Timetable, MemberCourse, Classroom, Session};
+use App\Models\{Timetable, MemberCourse, Classroom, Session, AcademicYear, Semester};
 use App\Services\{SchedulingService, AuditService, NotificationService, PriorityService};
 
 class SchedulingController extends \Controller
@@ -38,16 +40,36 @@ class SchedulingController extends \Controller
 
         // Get priority state for the view
         $priorityState = PriorityService::getCurrentState();
+        $academicYears = AcademicYear::where(['is_active' => 1], 'start_date DESC');
+        $semesters = Semester::allWithYear();
+        $filters = [
+            'academic_year_id' => $this->request->input('academic_year_id'),
+            'semester_id'      => $this->request->input('semester_id'),
+        ];
 
         // Get user's courses
         $myCourses = $memberId ? MemberCourse::forMember($memberId) : [];
+        if (!empty($filters['academic_year_id'])) {
+            $myCourses = array_values(array_filter($myCourses, static function ($course) use ($filters) {
+                return (int)($course['academic_year_id'] ?? 0) === (int)$filters['academic_year_id'];
+            }));
+        }
+        if (!empty($filters['semester_id'])) {
+            $myCourses = array_values(array_filter($myCourses, static function ($course) use ($filters) {
+                return (int)($course['semester_id'] ?? 0) === (int)$filters['semester_id'];
+            }));
+        }
         $classrooms = Classroom::active();
         $sessions = Session::active();
 
         // Get user's scheduled entries
         $myEntries = [];
         if ($memberId) {
-            $myEntries = Timetable::allWithDetails(['member_id' => $memberId]);
+            $myEntries = Timetable::allWithDetails([
+                'member_id'        => $memberId,
+                'academic_year_id' => $filters['academic_year_id'],
+                'semester_id'      => $filters['semester_id'],
+            ]);
         }
 
         $this->render('scheduling.index', [
@@ -58,6 +80,9 @@ class SchedulingController extends \Controller
             'myEntries'     => $myEntries,
             'priorityState' => $priorityState,
             'isAdmin'       => $isAdmin,
+            'academicYears' => $academicYears,
+            'semesters'     => $semesters,
+            'filters'       => $filters,
         ]);
     }
 
@@ -104,7 +129,7 @@ class SchedulingController extends \Controller
         );
 
         if ($conflicts) {
-            $msg = 'تعارض في الجدولة: ' . implode(' | ', $conflicts);
+            $msg = 'تعارض في التسكين: ' . implode(' | ', $conflicts);
             $this->redirect('/scheduling', $msg, 'error');
         }
 
@@ -191,7 +216,7 @@ class SchedulingController extends \Controller
         );
 
         if ($conflicts) {
-            $msg = 'تعارض في الجدولة: ' . implode(' | ', $conflicts);
+            $msg = 'تعارض في التسكين: ' . implode(' | ', $conflicts);
             $this->redirect("/scheduling/{$id}/edit", $msg, 'error');
         }
 
@@ -225,6 +250,51 @@ class SchedulingController extends \Controller
         AuditService::log('DELETE', 'timetable', (int)$id, $entry);
 
         $this->redirect('/scheduling', 'تم حذف الحصة من الجدول بنجاح ✓');
+    }
+
+    /**
+     * AJAX: Return filtered scheduling data as JSON.
+     */
+    public function ajaxFilter(): void
+    {
+        $this->authorize('scheduling.view');
+
+        $memberId = $this->session->memberId();
+        $filters = [
+            'academic_year_id' => $this->request->input('academic_year_id'),
+            'semester_id'      => $this->request->input('semester_id'),
+        ];
+
+        // Get user's courses filtered
+        $myCourses = $memberId ? MemberCourse::forMember($memberId) : [];
+        if (!empty($filters['academic_year_id'])) {
+            $myCourses = array_values(array_filter($myCourses, static function ($course) use ($filters) {
+                return (int)($course['academic_year_id'] ?? 0) === (int)$filters['academic_year_id'];
+            }));
+        }
+        if (!empty($filters['semester_id'])) {
+            $myCourses = array_values(array_filter($myCourses, static function ($course) use ($filters) {
+                return (int)($course['semester_id'] ?? 0) === (int)$filters['semester_id'];
+            }));
+        }
+
+        // Get user's scheduled entries filtered
+        $myEntries = [];
+        if ($memberId) {
+            $myEntries = Timetable::allWithDetails([
+                'member_id'        => $memberId,
+                'academic_year_id' => $filters['academic_year_id'],
+                'semester_id'      => $filters['semester_id'],
+            ]);
+        }
+
+        $this->json([
+            'success'   => true,
+            'count'     => count($myEntries),
+            'myCourses' => $myCourses,
+            'myEntries' => $myEntries,
+            'filters'   => $filters,
+        ]);
     }
 
     public function passRole(): void

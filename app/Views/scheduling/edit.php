@@ -1,7 +1,7 @@
 <?php
 $this->layout('layouts.app');
-$__page_title = 'تعديل حصة في الجدول';
-$__breadcrumb = [['label' => 'الجدولة', 'url' => '/scheduling'], ['label' => 'تعديل']];
+$__page_title = 'تعديل تسكين محاضرة';
+$__breadcrumb = [['label' => 'التسكين', 'url' => '/scheduling'], ['label' => 'تعديل']];
 ?>
 
 <div class="row"><div class="col-md-8">

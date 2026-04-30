@@ -33,7 +33,7 @@ $statItems = [
 $spotlights = [
     ['title' => 'القسم الأكثر نشاطاً', 'icon' => 'fa-building-columns',
      'name' => $insights['topDepartment']['name'] ?? '—', 'total' => (int) ($insights['topDepartment']['total'] ?? 0)],
-    ['title' => 'الأكثر حصصاً', 'icon' => 'fa-user-tie',
+    ['title' => 'الأكثر محاضراتٍ', 'icon' => 'fa-user-tie',
      'name' => $insights['topMember']['name'] ?? '—', 'total' => (int) ($insights['topMember']['total'] ?? 0)],
     ['title' => 'القاعة الأكثر استخداماً', 'icon' => 'fa-door-open',
      'name' => $insights['topClassroom']['name'] ?? '—', 'total' => (int) ($insights['topClassroom']['total'] ?? 0)],

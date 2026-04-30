@@ -908,10 +908,10 @@ class DataTransferService
     {
         $days = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس'];
         $templates = [
-            ['session_name' => 'الفترة الأولى', 'start_time' => '08:00:00', 'end_time' => '10:00:00', 'duration' => 120],
-            ['session_name' => 'الفترة الثانية', 'start_time' => '10:15:00', 'end_time' => '12:15:00', 'duration' => 120],
-            ['session_name' => 'الفترة الثالثة', 'start_time' => '12:30:00', 'end_time' => '14:30:00', 'duration' => 120],
-            ['session_name' => 'الفترة الرابعة', 'start_time' => '14:45:00', 'end_time' => '16:45:00', 'duration' => 120],
+            ['session_name' => 'الفترة الأولى',  'start_time' => '08:00:00', 'end_time' => '10:00:00', 'duration' => 2],
+            ['session_name' => 'الفترة الثانية', 'start_time' => '10:15:00', 'end_time' => '12:15:00', 'duration' => 2],
+            ['session_name' => 'الفترة الثالثة', 'start_time' => '12:30:00', 'end_time' => '14:30:00', 'duration' => 2],
+            ['session_name' => 'الفترة الرابعة', 'start_time' => '14:45:00', 'end_time' => '16:45:00', 'duration' => 2],
         ];
 
         $rows = [];

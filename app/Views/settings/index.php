@@ -30,7 +30,7 @@ $__breadcrumb = [['label' => 'الإعدادات']];
         <!-- Scheduling Settings -->
         <div class="col-md-6">
             <div class="card card-success card-outline">
-                <div class="card-header"><h3 class="card-title"><i class="fas fa-calendar-alt ml-1"></i> إعدادات الجدولة</h3></div>
+                <div class="card-header"><h3 class="card-title"><i class="fas fa-calendar-alt ml-1"></i> إعدادات التسكين</h3></div>
                 <div class="card-body">
                     <?php if (!empty($scheduling)): ?>
                         <?php foreach ($scheduling as $s): ?>
@@ -40,7 +40,7 @@ $__breadcrumb = [['label' => 'الإعدادات']];
                         </div>
                         <?php endforeach; ?>
                     <?php else: ?>
-                        <p class="text-muted">لا توجد إعدادات جدولة</p>
+                        <p class="text-muted">لا توجد إعدادات تسكين</p>
                     <?php endif; ?>
                 </div>
             </div>

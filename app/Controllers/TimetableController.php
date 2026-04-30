@@ -6,9 +6,11 @@ require_once APP_ROOT . '/app/Models/Department.php';
 require_once APP_ROOT . '/app/Models/Level.php';
 require_once APP_ROOT . '/app/Models/Member.php';
 require_once APP_ROOT . '/app/Models/Classroom.php';
+require_once APP_ROOT . '/app/Models/AcademicYear.php';
+require_once APP_ROOT . '/app/Models/Semester.php';
 require_once APP_ROOT . '/app/Services/ExportService.php';
 
-use App\Models\{Timetable, Department, Level, Member, Classroom};
+use App\Models\{Timetable, Department, Level, Member, Classroom, AcademicYear, Semester};
 use App\Services\ExportService;
 
 class TimetableController extends \Controller
@@ -21,12 +23,16 @@ class TimetableController extends \Controller
         $levels = Level::active();
         $members = Member::active();
         $classrooms = Classroom::active();
+        $academicYears = AcademicYear::where(['is_active' => 1], 'start_date DESC');
+        $semesters = Semester::allWithYear();
 
         $filters = [
             'department_id' => $this->request->input('department_id'),
             'level_id'      => $this->request->input('level_id'),
             'member_id'     => $this->request->input('member_id'),
             'classroom_id'  => $this->request->input('classroom_id'),
+            'academic_year_id' => $this->request->input('academic_year_id'),
+            'semester_id'   => $this->request->input('semester_id'),
         ];
 
         $entries = [];
@@ -39,7 +45,8 @@ class TimetableController extends \Controller
             if (!empty($filters['department_id']) && !empty($filters['level_id'])) {
                 $pivotData = Timetable::pivotTable(
                     (int)$filters['department_id'],
-                    (int)$filters['level_id']
+                    (int)$filters['level_id'],
+                    array_intersect_key($filters, array_flip(['academic_year_id', 'semester_id', 'member_id', 'classroom_id']))
                 );
             }
         }
@@ -49,6 +56,8 @@ class TimetableController extends \Controller
             'levels'      => $levels,
             'members'     => $members,
             'classrooms'  => $classrooms,
+            'academicYears' => $academicYears,
+            'semesters'   => $semesters,
             'filters'     => $filters,
             'entries'     => $entries,
             'pivotData'   => $pivotData,
@@ -66,6 +75,8 @@ class TimetableController extends \Controller
             'level_id'      => $this->request->input('level_id'),
             'member_id'     => $this->request->input('member_id'),
             'classroom_id'  => $this->request->input('classroom_id'),
+            'academic_year_id' => $this->request->input('academic_year_id'),
+            'semester_id'   => $this->request->input('semester_id'),
         ];
 
         $entries = Timetable::allWithDetails($filters);
@@ -85,7 +96,8 @@ class TimetableController extends \Controller
             case 'pdf':
                 $pivotData = Timetable::pivotTable(
                     (int)($filters['department_id'] ?? 0),
-                    (int)($filters['level_id'] ?? 0)
+                    (int)($filters['level_id'] ?? 0),
+                    array_intersect_key($filters, array_flip(['academic_year_id', 'semester_id', 'member_id', 'classroom_id']))
                 );
                 $pivotData['entries'] = $entries;
                 $institution = \Database::getInstance()->fetchColumn(
@@ -101,7 +113,8 @@ class TimetableController extends \Controller
             case 'html':
                 $pivotData = Timetable::pivotTable(
                     (int)($filters['department_id'] ?? 0),
-                    (int)($filters['level_id'] ?? 0)
+                    (int)($filters['level_id'] ?? 0),
+                    array_intersect_key($filters, array_flip(['academic_year_id', 'semester_id', 'member_id', 'classroom_id']))
                 );
                 $pivotData['entries'] = $entries;
                 ExportService::timetableHtml($pivotData, $deptName, $levelName);
@@ -110,5 +123,47 @@ class TimetableController extends \Controller
             default:
                 ExportService::timetableCsv($entries, 'timetable_' . date('Y-m-d') . '.csv');
         }
+    }
+
+    /**
+     * AJAX: Return filtered timetable data as JSON.
+     */
+    public function ajaxFilter(): void
+    {
+        $this->authorize('timetable.view');
+
+        $filters = [
+            'department_id'    => $this->request->input('department_id'),
+            'level_id'         => $this->request->input('level_id'),
+            'member_id'        => $this->request->input('member_id'),
+            'classroom_id'     => $this->request->input('classroom_id'),
+            'academic_year_id' => $this->request->input('academic_year_id'),
+            'semester_id'      => $this->request->input('semester_id'),
+        ];
+
+        $entries = [];
+        $pivotData = null;
+        $hasFilter = !empty(array_filter($filters));
+
+        if ($hasFilter) {
+            $entries = Timetable::allWithDetails($filters);
+
+            if (!empty($filters['department_id']) && !empty($filters['level_id'])) {
+                $pivotData = Timetable::pivotTable(
+                    (int)$filters['department_id'],
+                    (int)$filters['level_id'],
+                    array_intersect_key($filters, array_flip(['academic_year_id', 'semester_id', 'member_id', 'classroom_id']))
+                );
+            }
+        }
+
+        $this->json([
+            'success'   => true,
+            'hasFilter' => $hasFilter,
+            'count'     => count($entries),
+            'entries'   => $entries,
+            'pivotData' => $pivotData,
+            'filters'   => $filters,
+        ]);
     }
 }
