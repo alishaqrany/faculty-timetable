@@ -113,9 +113,34 @@ $__breadcrumb = [['label' => 'الإعدادات']];
     <div class="card-body">
         <p class="text-muted mb-2">يمكنك تنزيل ملف SQL غنيّ للاختبار يحتوي على 4 فرق دراسية، 4 أقسام، 24 شعبة، 192 سكشن، 64 عضو هيئة تدريس/هيئة معاونة، 64 مقرراً، و24 صفاً جاهزاً في الجدول.</p>
         <p class="text-muted mb-3">يتضمن الملف أيضاً 8 حسابات تجريبية للأقسام بصلاحيات رئيس قسم وعضو هيئة تدريس، وكلمة المرور الموحدة لها هي <code>password</code>.</p>
-        <a href="<?= url('/settings/data-transfer/sample-sql') ?>" class="btn btn-outline-dark">
-            <i class="fas fa-file-download ml-1"></i> تنزيل ملف البيانات التجريبية
-        </a>
+
+        <div class="d-flex flex-wrap align-items-center" style="gap:.75rem;">
+            <a href="<?= url('/settings/data-transfer/sample-sql') ?>" class="btn btn-outline-dark">
+                <i class="fas fa-file-download ml-1"></i> تنزيل ملف البيانات التجريبية
+            </a>
+
+            <form method="POST" action="<?= url('/settings/data-transfer/import-sample') ?>" class="d-inline-block" onsubmit="return confirm('سيتم استيراد البيانات التجريبية مباشرة واستبدال البيانات التشغيلية الحالية مع الإبقاء على حسابات المدير. هل تريد المتابعة؟');">
+                <?= csrf_field() ?>
+                <button type="submit" class="btn btn-dark">
+                    <i class="fas fa-file-import ml-1"></i> استيراد البيانات التجريبية مباشرة
+                </button>
+            </form>
+
+            <?php if (!empty($sampleDemoMeta['imported'])): ?>
+                <a href="<?= url('/settings/data-transfer/sample-accounts') ?>" class="btn btn-outline-info">
+                    <i class="fas fa-users ml-1"></i> عرض الحسابات التجريبية
+                </a>
+            <?php endif; ?>
+        </div>
+
+        <?php if (!empty($sampleDemoMeta['imported'])): ?>
+            <div class="alert alert-info mt-3 mb-0">
+                <strong>آخر استيراد تجريبي:</strong> <?= e((string) ($sampleDemoMeta['imported_at'] ?? '')) ?>
+                <?php if (!empty($sampleDemoMeta['accounts_count'])): ?>
+                    <span class="d-block d-md-inline mr-md-3">عدد الحسابات الجاهزة: <?= (int) $sampleDemoMeta['accounts_count'] ?></span>
+                <?php endif; ?>
+            </div>
+        <?php endif; ?>
     </div>
 </div>
 

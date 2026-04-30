@@ -14,7 +14,11 @@ class SettingController extends \Controller
         $this->authorize('settings.view');
         $general = Setting::byGroup('general');
         $scheduling = Setting::byGroup('scheduling');
-        $this->render('settings.index', ['general' => $general, 'scheduling' => $scheduling]);
+        $this->render('settings.index', [
+            'general' => $general,
+            'scheduling' => $scheduling,
+            'sampleDemoMeta' => $this->session->get('sample_demo_meta', []),
+        ]);
     }
 
     public function update(): void

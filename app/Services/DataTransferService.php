@@ -61,6 +61,7 @@ class DataTransferService
     private const SAMPLE_YEAR_NAME = '2026/2027 (بيانات تجريبية)';
     private const SAMPLE_SEMESTER_ONE = 'الفصل الدراسي الأول - تجريبي';
     private const SAMPLE_SEMESTER_TWO = 'الفصل الدراسي الثاني - تجريبي';
+    private const DEMO_PASSWORD = 'password';
     private const DEMO_PASSWORD_HASH = '$2y$10$N9qo8uLOickgx2ZMRZoMyeIjZag0J7sXh8M6gZfQnUnxE27XGr0aG';
 
     public static function tables(): array
@@ -73,6 +74,75 @@ class DataTransferService
         return self::SAMPLE_SQL_FILENAME;
     }
 
+    public static function sampleDemoPassword(): string
+    {
+        return self::DEMO_PASSWORD;
+    }
+
+    public static function sampleDemoAccounts(): array
+    {
+        $accounts = [];
+
+        foreach (self::sampleDepartments() as $department) {
+            $accounts[] = [
+                'username' => 'head_' . $department['slug'],
+                'email' => self::memberEmail($department['slug'], 'faculty', 1),
+                'role_label' => 'رئيس قسم',
+                'department_name' => $department['name'],
+            ];
+
+            $accounts[] = [
+                'username' => 'faculty_' . $department['slug'],
+                'email' => self::memberEmail($department['slug'], 'faculty', 2),
+                'role_label' => 'عضو هيئة تدريس',
+                'department_name' => $department['name'],
+            ];
+        }
+
+        return $accounts;
+    }
+
+    public static function sampleDataSummary(): array
+    {
+        $departments = self::sampleDepartments();
+        $divisions = 0;
+        $sections = 0;
+        $subjects = 0;
+        $scheduledRows = 0;
+
+        foreach ($departments as $department) {
+            foreach (self::defaultLevelsDefinition() as $level) {
+                $levelCode = $level['level_code'];
+                $divisionNames = in_array($levelCode, ['L1', 'L2'], true)
+                    ? ['عامة']
+                    : ($department['branches'][$levelCode] ?? ['عامة']);
+
+                $divisions += count($divisionNames);
+
+                foreach ($divisionNames as $divisionName) {
+                    $sections += $divisionName === 'عامة' ? 12 : 6;
+                }
+
+                foreach (($department['subjects'][$levelCode] ?? []) as $subject) {
+                    $subjects++;
+                    $scheduledRows++;
+                }
+            }
+        }
+
+        return [
+            'levels' => count(self::defaultLevelsDefinition()),
+            'departments' => count($departments),
+            'divisions' => $divisions,
+            'sections' => $sections,
+            'faculty_members' => count($departments) * 10,
+            'assistants' => count($departments) * 6,
+            'subjects' => $subjects,
+            'accounts' => count(self::sampleDemoAccounts()),
+            'timetable_rows' => $scheduledRows,
+        ];
+    }
+
     public static function generateSampleSqlContent(): string
     {
         $levels = self::defaultLevelsDefinition();
@@ -80,6 +150,11 @@ class DataTransferService
         $classrooms = self::sampleClassrooms();
         $sessions = self::sampleSessions();
         $lectureRooms = self::sampleLectureRoomNames();
+        $allRoomNames = array_column($classrooms, 'classroom_name');
+        $practicalRooms = array_values(array_diff($allRoomNames, $lectureRooms));
+        if (empty($practicalRooms)) {
+            $practicalRooms = $allRoomNames;
+        }
 
         $levelRows = [];
         foreach ($levels as $level) {
@@ -104,9 +179,9 @@ class DataTransferService
         $assistantFirstNames = ['إيمان', 'نهى', 'آلاء', 'مروة', 'آية', 'ولاء'];
         $facultyDegrees = ['أستاذ', 'أستاذ مشارك', 'أستاذ مساعد', 'أستاذ مساعد', 'محاضر', 'محاضر', 'دكتوراه', 'دكتوراه', 'ماجستير', 'ماجستير'];
         $phoneCounter = 1000001;
-        $scheduledTheoryRows = [];
+        $scheduledAssignments = [];
 
-        foreach ($departments as $department) {
+        foreach ($departments as $departmentIndex => $department) {
             $departmentRows[] = [
                 self::sqlString($department['name']),
                 self::sqlString($department['code']),
@@ -114,7 +189,7 @@ class DataTransferService
                 '1',
             ];
 
-            foreach ($levels as $level) {
+            foreach ($levels as $levelIndex => $level) {
                 $divisionNames = in_array($level['level_code'], ['L1', 'L2'], true)
                     ? ['عامة']
                     : ($department['branches'][$level['level_code']] ?? ['عامة']);
@@ -195,7 +270,7 @@ class DataTransferService
             ];
 
             foreach ($department['subjects'] as $levelCode => $subjects) {
-                foreach ($subjects as $subject) {
+                foreach ($subjects as $subjectIndex => $subject) {
                     $subjectRows[] = [
                         self::sqlString($subject['name']),
                         self::sqlString($subject['code']),
@@ -223,34 +298,27 @@ class DataTransferService
                         self::academicYearIdExpr(self::SAMPLE_YEAR_NAME),
                     ];
 
-                    if (!empty($subject['scheduled'])) {
-                        $scheduledTheoryRows[] = [
-                            'subject_code' => $subject['code'],
-                            'member_email' => $memberEmail,
-                        ];
-                    }
+                    $scheduledAssignments[] = [
+                        'subject_code' => $subject['code'],
+                        'member_email' => $memberEmail,
+                        'assignment_type' => $subject['type'],
+                        'department_code' => $department['code'],
+                        'level_code' => $levelCode,
+                        'division' => $subject['division'],
+                        'section' => $subject['section'] ?? null,
+                        'department_index' => $departmentIndex,
+                        'level_index' => (int) substr($levelCode, 1) - 1,
+                        'subject_index' => $subjectIndex,
+                    ];
                 }
             }
         }
 
-        foreach ($scheduledTheoryRows as $index => $scheduled) {
-            $session = $sessions[$index % count($sessions)];
-            $roomName = $lectureRooms[$index % count($lectureRooms)];
-
-            $timetableRows[] = [
-                self::memberCourseIdExpr($scheduled['subject_code'], $scheduled['member_email'], 'نظري'),
-                self::classroomIdExpr($roomName),
-                self::sessionIdExpr($session['day'], $session['session_name']),
-                self::semesterIdExpr(self::SAMPLE_SEMESTER_ONE),
-                self::academicYearIdExpr(self::SAMPLE_YEAR_NAME),
-                self::sqlString('منشور'),
-                self::adminUserIdExpr(),
-            ];
-        }
+        $timetableRows = self::buildSampleTimetableRows($scheduledAssignments, $sessions, $lectureRooms, $practicalRooms);
 
         $lines = [
             '-- Rich sample data for Timetable Management System',
-            '-- 4 levels, 4 departments, 24 divisions, 192 sections, 64 faculty/assistants, 64 subjects, 64 teaching assignments, 24 timetable rows.',
+            '-- 4 levels, 4 departments, 24 divisions, 192 sections, 64 faculty/assistants, 64 subjects, 64 teaching assignments, ' . count($timetableRows) . ' timetable rows.',
             '-- Demo password for all generated accounts: password',
             '-- Generated at: ' . date('Y-m-d H:i:s'),
             '',
@@ -854,6 +922,98 @@ class DataTransferService
         }
 
         return $rows;
+    }
+
+    private static function buildSampleTimetableRows(array $assignments, array $sessions, array $lectureRooms, array $practicalRooms): array
+    {
+        $timetableRows = [];
+        $sessionCount = count($sessions);
+        $memberUsage = [];
+        $divisionUsage = [];
+        $roomUsage = [];
+
+        foreach ($assignments as $index => $assignment) {
+            $divisionKey = implode('|', [
+                $assignment['department_code'],
+                $assignment['level_code'],
+                $assignment['division'],
+            ]);
+
+            $preferredStart = (
+                ($assignment['department_index'] * 3)
+                + ($assignment['level_index'] * 5)
+                + ($assignment['subject_index'] * 7)
+                + ($assignment['assignment_type'] === 'عملي' ? 1 : 0)
+            ) % $sessionCount;
+
+            $sessionIndex = self::findAvailableSampleSessionIndex(
+                $preferredStart,
+                $sessionCount,
+                $assignment['member_email'],
+                $divisionKey,
+                $memberUsage,
+                $divisionUsage
+            );
+
+            $memberUsage[$assignment['member_email']][$sessionIndex] = true;
+            $divisionUsage[$divisionKey][$sessionIndex] = true;
+
+            $roomPool = $assignment['assignment_type'] === 'نظري' ? $lectureRooms : $practicalRooms;
+            $roomName = self::pickSampleRoomName($roomPool, $roomUsage[$sessionIndex] ?? [], $index);
+            $roomUsage[$sessionIndex][$roomName] = true;
+
+            $session = $sessions[$sessionIndex];
+            $timetableRows[] = [
+                self::memberCourseIdExpr($assignment['subject_code'], $assignment['member_email'], $assignment['assignment_type']),
+                self::classroomIdExpr($roomName),
+                self::sessionIdExpr($session['day'], $session['session_name']),
+                self::semesterIdExpr(self::SAMPLE_SEMESTER_ONE),
+                self::academicYearIdExpr(self::SAMPLE_YEAR_NAME),
+                self::sqlString('منشور'),
+                self::adminUserIdExpr(),
+            ];
+        }
+
+        return $timetableRows;
+    }
+
+    private static function findAvailableSampleSessionIndex(
+        int $preferredStart,
+        int $sessionCount,
+        string $memberEmail,
+        string $divisionKey,
+        array $memberUsage,
+        array $divisionUsage
+    ): int {
+        for ($offset = 0; $offset < $sessionCount; $offset++) {
+            $candidate = ($preferredStart + $offset) % $sessionCount;
+            $memberBusy = !empty($memberUsage[$memberEmail][$candidate]);
+            $divisionBusy = !empty($divisionUsage[$divisionKey][$candidate]);
+
+            if (!$memberBusy && !$divisionBusy) {
+                return $candidate;
+            }
+        }
+
+        return $preferredStart;
+    }
+
+    private static function pickSampleRoomName(array $roomPool, array $usedRooms, int $seed): string
+    {
+        $roomCount = count($roomPool);
+        if ($roomCount === 0) {
+            return 'قاعة افتراضية';
+        }
+
+        $startIndex = $seed % $roomCount;
+        for ($offset = 0; $offset < $roomCount; $offset++) {
+            $candidate = $roomPool[($startIndex + $offset) % $roomCount];
+            if (empty($usedRooms[$candidate])) {
+                return $candidate;
+            }
+        }
+
+        return $roomPool[$startIndex];
     }
 
     private static function sqlString(string $value): string
