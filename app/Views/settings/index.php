@@ -47,6 +47,32 @@ $__breadcrumb = [['label' => 'الإعدادات']];
         </div>
     </div>
 
+    <!-- Scheduling View Mode -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card card-info card-outline">
+                <div class="card-header"><h3 class="card-title"><i class="fas fa-th ml-1"></i> واجهة التسكين</h3></div>
+                <div class="card-body">
+                    <?php
+                    $viewMode = 'both';
+                    foreach (($scheduling ?? []) as $s) {
+                        if ($s['setting_key'] === 'scheduling_view_mode') $viewMode = $s['setting_value'];
+                    }
+                    ?>
+                    <div class="form-group">
+                        <label>وضع عرض التسكين</label>
+                        <select name="settings[scheduling_view_mode]" class="form-control">
+                            <option value="classic" <?= $viewMode === 'classic' ? 'selected' : '' ?>>الواجهة الكلاسيكية فقط</option>
+                            <option value="grid" <?= $viewMode === 'grid' ? 'selected' : '' ?>>الواجهة الشبكية فقط</option>
+                            <option value="both" <?= $viewMode === 'both' ? 'selected' : '' ?>>الواجهتان معاً (كلاسيكية + شبكية)</option>
+                        </select>
+                        <small class="form-text text-muted">يتحكم في أي واجهة تسكين تظهر في الشريط الجانبي. التسكين الإداري مستقل ويظهر دائماً للمسؤولين.</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="mb-4">
         <button type="submit" class="btn btn-primary btn-lg"><i class="fas fa-save ml-1"></i> حفظ الإعدادات</button>
     </div>

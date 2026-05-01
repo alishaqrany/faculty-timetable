@@ -1491,3 +1491,233 @@ html[dir="rtl"] body.app-modern-theme .sidebar-rebuild-v3 .sidebar-rebuild-link 
     }
 }
 
+/* ===== Comprehensive RTL Fixes ===== */
+
+/* --- Custom Controls (radio/checkbox) RTL --- */
+html[dir="rtl"] .custom-control {
+    padding-right: 1.75rem !important;
+    padding-left: 0 !important;
+    margin-right: 0;
+}
+
+html[dir="rtl"] .custom-control-label::before,
+html[dir="rtl"] .custom-control-label::after {
+    left: auto !important;
+    right: -1.75rem !important;
+}
+
+html[dir="rtl"] .custom-control-input {
+    left: auto !important;
+    right: 0 !important;
+}
+
+/* --- Info-box RTL --- */
+html[dir="rtl"] .info-box {
+    direction: rtl;
+}
+
+html[dir="rtl"] .info-box .info-box-icon {
+    border-radius: 0 0.25rem 0.25rem 0;
+}
+
+html[dir="rtl"] .info-box .info-box-content {
+    text-align: right;
+    padding: 5px 10px;
+}
+
+/* --- Breadcrumb RTL --- */
+html[dir="rtl"] .breadcrumb-item + .breadcrumb-item::before {
+    content: "/";
+    float: right;
+    padding-left: 0.5rem;
+    padding-right: 0;
+}
+
+html[dir="rtl"] .breadcrumb-item + .breadcrumb-item {
+    padding-right: 0.5rem;
+    padding-left: 0;
+}
+
+html[dir="rtl"] body.app-modern-theme .breadcrumb {
+    direction: rtl;
+}
+
+/* --- Icon spacing fix: ensure ml-1 / ml-2 give correct spacing in RTL --- */
+html[dir="rtl"] .fas.ml-1,
+html[dir="rtl"] .far.ml-1,
+html[dir="rtl"] .fab.ml-1,
+html[dir="rtl"] i.ml-1 {
+    margin-left: 0 !important;
+    margin-right: 0.25rem !important;
+}
+
+html[dir="rtl"] .fas.ml-2,
+html[dir="rtl"] .far.ml-2,
+html[dir="rtl"] .fab.ml-2,
+html[dir="rtl"] i.ml-2 {
+    margin-left: 0 !important;
+    margin-right: 0.5rem !important;
+}
+
+/* --- Card title icon alignment --- */
+html[dir="rtl"] .card-title {
+    direction: rtl;
+    text-align: right;
+}
+
+html[dir="rtl"] .card-title i {
+    margin-left: 0.35rem;
+    margin-right: 0;
+}
+
+/* --- Small-box RTL --- */
+html[dir="rtl"] .small-box .inner {
+    text-align: right;
+}
+
+html[dir="rtl"] .small-box .icon {
+    left: 10px;
+    right: auto;
+}
+
+html[dir="rtl"] .small-box .icon > i {
+    left: 14px;
+    right: auto;
+}
+
+html[dir="rtl"] .small-box-footer {
+    text-align: center;
+    direction: rtl;
+}
+
+html[dir="rtl"] .small-box-footer i {
+    margin-right: 0.25rem;
+    margin-left: 0;
+}
+
+/* --- Alert RTL --- */
+html[dir="rtl"] .alert {
+    text-align: right;
+    direction: rtl;
+}
+
+html[dir="rtl"] .alert .d-flex {
+    direction: rtl;
+}
+
+/* --- Button icons RTL --- */
+html[dir="rtl"] .btn i + span,
+html[dir="rtl"] .btn i:first-child {
+    margin-left: 0.25rem;
+    margin-right: 0;
+}
+
+/* --- Dropdown menu RTL --- */
+html[dir="rtl"] .dropdown-item {
+    text-align: right;
+    direction: rtl;
+}
+
+html[dir="rtl"] .dropdown-item i {
+    margin-left: 0.35rem;
+    margin-right: 0;
+}
+
+/* --- Form group label RTL --- */
+html[dir="rtl"] .form-group label {
+    display: block;
+    text-align: right;
+}
+
+/* --- Select2 RTL --- */
+html[dir="rtl"] .select2-container--bootstrap4 .select2-selection--single .select2-selection__rendered {
+    text-align: right;
+    padding-right: 0.75rem;
+    padding-left: 0;
+}
+
+html[dir="rtl"] .select2-container--bootstrap4 .select2-selection--single .select2-selection__arrow {
+    left: 0.5rem;
+    right: auto;
+}
+
+/* --- Table text alignment RTL --- */
+html[dir="rtl"] .table th,
+html[dir="rtl"] .table td {
+    text-align: right;
+}
+
+/* --- Badge icons RTL --- */
+html[dir="rtl"] .badge i {
+    margin-left: 0.2rem;
+    margin-right: 0;
+}
+
+/* --- Modal RTL --- */
+html[dir="rtl"] .modal-header,
+html[dir="rtl"] .modal-body,
+html[dir="rtl"] .modal-footer {
+    text-align: right;
+    direction: rtl;
+}
+
+html[dir="rtl"] .modal-header .close {
+    margin: -1rem auto -1rem -1rem;
+}
+
+/* --- Content header breadcrumb position fix --- */
+html[dir="rtl"] .content-header .col-sm-6:first-child {
+    text-align: right;
+}
+
+html[dir="rtl"] .content-header .col-sm-6:last-child {
+    text-align: left;
+}
+
+/* --- Button group RTL --- */
+html[dir="rtl"] .btn-group-vertical {
+    text-align: right;
+}
+
+html[dir="rtl"] .btn-block {
+    text-align: center;
+}
+
+/* --- Card tools position RTL --- */
+html[dir="rtl"] .card-header .card-tools {
+    margin-right: auto;
+    margin-left: 0;
+}
+
+/* --- Page content global direction --- */
+html[dir="rtl"] .content-wrapper,
+html[dir="rtl"] .content,
+html[dir="rtl"] .container-fluid {
+    direction: rtl;
+    text-align: right;
+}
+
+/* --- Fix input group RTL --- */
+html[dir="rtl"] .input-group > .input-group-append {
+    margin-right: -1px;
+    margin-left: 0;
+}
+
+html[dir="rtl"] .input-group > .input-group-prepend {
+    margin-left: -1px;
+    margin-right: 0;
+}
+
+/* --- Fix pagination RTL --- */
+html[dir="rtl"] .pagination {
+    direction: rtl;
+}
+
+html[dir="rtl"] .page-item:first-child .page-link {
+    border-radius: 0 0.25rem 0.25rem 0;
+}
+
+html[dir="rtl"] .page-item:last-child .page-link {
+    border-radius: 0.25rem 0 0 0.25rem;
+}
+

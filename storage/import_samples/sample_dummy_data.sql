@@ -58,10 +58,10 @@ VALUES
 
 INSERT INTO sessions (day, session_name, start_time, end_time, duration, is_active)
 VALUES
-('الأحد', 'الحصة 1', '08:00:00', '09:30:00', 90, 1),
-('الأحد', 'الحصة 2', '09:45:00', '11:15:00', 90, 1),
-('الاثنين', 'الحصة 1', '08:00:00', '09:30:00', 90, 1),
-('الثلاثاء', 'الحصة 1', '08:00:00', '09:30:00', 90, 1);
+('الأحد', 'المحاضرة 1', '08:00:00', '09:30:00', 90, 1),
+('الأحد', 'المحاضرة 2', '09:45:00', '11:15:00', 90, 1),
+('الاثنين', 'المحاضرة 1', '08:00:00', '09:30:00', 90, 1),
+('الثلاثاء', 'المحاضرة 1', '08:00:00', '09:30:00', 90, 1);
 
 INSERT INTO faculty_members (member_name, email, phone, department_id, degree, join_date, ranking, role, is_active)
 VALUES
@@ -84,8 +84,8 @@ SET @sectionA = (SELECT section_id FROM sections WHERE section_name = 'شعبة 
 SET @sectionB = (SELECT section_id FROM sections WHERE section_name = 'شعبة B (تجريبي)' LIMIT 1);
 SET @class1 = (SELECT classroom_id FROM classrooms WHERE classroom_name = 'قاعة C-101 (تجريبي)' LIMIT 1);
 SET @class2 = (SELECT classroom_id FROM classrooms WHERE classroom_name = 'معمل C-LAB1 (تجريبي)' LIMIT 1);
-SET @sess1 = (SELECT session_id FROM sessions WHERE day = 'الأحد' AND session_name = 'الحصة 1' LIMIT 1);
-SET @sess2 = (SELECT session_id FROM sessions WHERE day = 'الأحد' AND session_name = 'الحصة 2' LIMIT 1);
+SET @sess1 = (SELECT session_id FROM sessions WHERE day = 'الأحد' AND session_name = 'المحاضرة 1' LIMIT 1);
+SET @sess2 = (SELECT session_id FROM sessions WHERE day = 'الأحد' AND session_name = 'المحاضرة 2' LIMIT 1);
 SET @admin_user = (SELECT id FROM users WHERE username = 'admin' LIMIT 1);
 
 INSERT INTO member_courses (member_id, subject_id, section_id, semester_id, academic_year_id)

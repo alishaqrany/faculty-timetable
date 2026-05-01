@@ -67,6 +67,7 @@ return [
     'scheduling.view'        => 'عرض الجدولة',
     'scheduling.manage'      => 'إدارة الجدولة',
     'scheduling.pass_role'   => 'تمرير الدور',
+    'scheduling.admin'       => 'التسكين نيابة عن الأعضاء',
 
     // Priority Management
     'priority.view'            => 'عرض إدارة الأولوية',

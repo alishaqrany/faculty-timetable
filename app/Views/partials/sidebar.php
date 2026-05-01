@@ -42,6 +42,7 @@ $matchesAny = static function (array $paths) use ($matchesRoute): bool {
 
 $permissions = [
     'scheduling' => can('scheduling.view'),
+    'scheduling_admin' => can('scheduling.admin'),
     'priority' => can('priority.view'),
     'timetable' => can('timetable.view'),
     'members' => can('members.view'),
@@ -62,17 +63,26 @@ $permissions = [
     'backup' => can('backup.view'),
 ];
 
+// Check scheduling view mode setting
+$schedulingViewMode = 'both';
+try {
+    $svmRow = \Database::getInstance()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'scheduling_view_mode'");
+    if ($svmRow) $schedulingViewMode = $svmRow['setting_value'];
+} catch (\Throwable $e) {}
+
 $sectionBlueprint = [
     [
         'header' => ' التشغيل',
         'title' => ' ادارة التسكين',
         'icon' => 'fas fa-satellite-dish',
-        'items' => [
-            ['label' => 'التسكين', 'path' => '/scheduling', 'icon' => 'far fa-calendar-check', 'permission' => 'scheduling'],
+        'items' => array_filter([
+            in_array($schedulingViewMode, ['classic','both']) ? ['label' => 'التسكين', 'path' => '/scheduling', 'icon' => 'far fa-calendar-check', 'permission' => 'scheduling'] : null,
+            in_array($schedulingViewMode, ['grid','both']) ? ['label' => 'التسكين الشبكي', 'path' => '/grid-scheduling', 'icon' => 'fas fa-th', 'permission' => 'scheduling'] : null,
+            ['label' => 'التسكين الإداري', 'path' => '/admin-scheduling', 'icon' => 'fas fa-user-shield', 'permission' => 'scheduling_admin'],
             ['label' => 'إدارة الأولوية', 'path' => '/priority', 'icon' => 'fas fa-sort-amount-up', 'permission' => 'priority'],
             ['label' => 'الجدول الدراسي', 'path' => '/timetable', 'icon' => 'far fa-clock', 'permission' => 'timetable'],
             ['label' => 'التقارير والإحصائيات', 'path' => '/reports', 'icon' => 'fas fa-chart-bar', 'permission' => null],
-        ],
+        ]),
     ],
     [
         'header' => 'التدريس',

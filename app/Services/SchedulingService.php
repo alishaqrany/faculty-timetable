@@ -140,7 +140,7 @@ class SchedulingService
             $params
         );
         if ($memberConflict) {
-            $conflicts[] = "عضو هيئة التدريس \"{$memberConflict['member_name']}\" لديه حصة في نفس الفترة ({$memberConflict['day']} - {$memberConflict['session_name']})";
+            $conflicts[] = "عضو هيئة التدريس \"{$memberConflict['member_name']}\" لديه محاضرة في نفس الفترة ({$memberConflict['day']} - {$memberConflict['session_name']})";
         }
 
         return $conflicts;

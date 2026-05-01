@@ -139,7 +139,7 @@ class SchedulingController extends \Controller
 
         AuditService::log('CREATE', 'timetable', $id, null, $data);
 
-        $this->redirect('/scheduling', 'تم إضافة الحصة في الجدول بنجاح ✓');
+        $this->redirect('/scheduling', 'تم إضافة المحاضرة في الجدول بنجاح ✓');
     }
 
     public function edit(string $id): void
@@ -223,7 +223,7 @@ class SchedulingController extends \Controller
         Timetable::updateById((int)$id, $data);
         AuditService::log('UPDATE', 'timetable', (int)$id, $entry, $data);
 
-        $this->redirect('/scheduling', 'تم تحديث الحصة في الجدول بنجاح ✓');
+        $this->redirect('/scheduling', 'تم تحديث المحاضرة في الجدول بنجاح ✓');
     }
 
     public function destroy(string $id): void
@@ -249,7 +249,7 @@ class SchedulingController extends \Controller
         Timetable::destroy((int)$id);
         AuditService::log('DELETE', 'timetable', (int)$id, $entry);
 
-        $this->redirect('/scheduling', 'تم حذف الحصة من الجدول بنجاح ✓');
+        $this->redirect('/scheduling', 'تم حذف المحاضرة من الجدول بنجاح ✓');
     }
 
     /**

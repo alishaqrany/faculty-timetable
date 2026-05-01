@@ -6,7 +6,7 @@ $__breadcrumb = [['label' => 'التسكين', 'url' => '/scheduling'], ['label'
 
 <div class="row"><div class="col-md-8">
     <div class="card card-warning">
-        <div class="card-header"><h3 class="card-title">تعديل الحصة</h3></div>
+        <div class="card-header"><h3 class="card-title">تعديل المحاضرة</h3></div>
         <form method="POST" action="<?= url("/scheduling/{$entry['timetable_id']}") ?>">
             <?= csrf_field() ?>
             <div class="card-body">

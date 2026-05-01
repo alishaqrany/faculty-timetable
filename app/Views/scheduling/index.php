@@ -7,6 +7,21 @@ $priorityMode = $priorityState['mode'] ?? 'disabled';
 $priorityLabel = $priorityState['mode_label'] ?? 'معطل';
 ?>
 
+<!-- Switch Navigation -->
+<div class="d-flex flex-wrap align-items-center mb-3" style="gap: 0.5rem;">
+    <span class="btn btn-primary btn-sm disabled">
+        <i class="fas fa-list ml-1"></i> التسكين الكلاسيكي
+    </span>
+    <a href="<?= url('/grid-scheduling') ?>" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-th ml-1"></i> التسكين الشبكي
+    </a>
+    <?php if (can('scheduling.admin')): ?>
+    <a href="<?= url('/admin-scheduling') ?>" class="btn btn-outline-info btn-sm">
+        <i class="fas fa-user-shield ml-1"></i> التسكين الإداري
+    </a>
+    <?php endif; ?>
+</div>
+
 <!-- Priority State Info -->
 <?php if ($priorityMode !== 'disabled'): ?>
 <div class="alert alert-info d-flex flex-wrap align-items-center justify-content-between">
@@ -106,7 +121,7 @@ $priorityLabel = $priorityState['mode_label'] ?? 'معطل';
 <!-- Add Entry Form (kept as traditional POST for CSRF safety) -->
 <?php if ($canSchedule): ?>
 <div class="card card-primary card-outline" id="addEntryCard" <?= empty($myCourses) ? 'style="display:none"' : '' ?>>
-    <div class="card-header"><h3 class="card-title"><i class="fas fa-plus ml-1"></i> إضافة حصة جديدة</h3></div>
+    <div class="card-header"><h3 class="card-title"><i class="fas fa-plus ml-1"></i> إضافة محاضرة جديدة</h3></div>
     <form method="POST" action="<?= url('/scheduling') ?>">
         <?= csrf_field() ?>
         <div class="card-body">
@@ -334,7 +349,7 @@ $priorityLabel = $priorityState['mode_label'] ?? 'معطل';
                 var deleteForm = btn.closest('form');
                 Swal.fire({
                     title: 'تأكيد الحذف',
-                    text: 'هل أنت متأكد من حذف هذه الحصة؟',
+                    text: 'هل أنت متأكد من حذف هذه المحاضرة؟',
                     icon: 'warning',
                     showCancelButton: true,
                     confirmButtonColor: '#d33',

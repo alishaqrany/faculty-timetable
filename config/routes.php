@@ -50,6 +50,20 @@ $router->group('', ['AuthMiddleware', 'CsrfMiddleware'], function (Router $route
     $router->post('/scheduling/{id}/delete', 'SchedulingController@destroy');
     $router->post('/scheduling/pass-role', 'SchedulingController@passRole');
 
+    // Admin Scheduling (on behalf of members)
+    $router->get('/admin-scheduling', 'AdminSchedulingController@index');
+    $router->get('/admin-scheduling/member-courses/{id}', 'AdminSchedulingController@memberCourses');
+    $router->get('/admin-scheduling/member-entries/{id}', 'AdminSchedulingController@memberEntries');
+    $router->post('/admin-scheduling', 'AdminSchedulingController@store');
+    $router->post('/admin-scheduling/bulk', 'AdminSchedulingController@bulkStore');
+    $router->post('/admin-scheduling/{id}/delete', 'AdminSchedulingController@destroy');
+
+    // Grid Scheduling
+    $router->get('/grid-scheduling', 'GridSchedulingController@index');
+    $router->get('/grid-scheduling/grid-data', 'GridSchedulingController@gridData');
+    $router->post('/grid-scheduling', 'GridSchedulingController@store');
+    $router->post('/grid-scheduling/{id}/delete', 'GridSchedulingController@destroy');
+
     // Priority Management
     $router->get('/priority', 'PriorityController@index');
     $router->post('/priority/mode', 'PriorityController@updateMode');
