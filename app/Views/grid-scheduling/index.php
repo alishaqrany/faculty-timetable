@@ -29,6 +29,14 @@ $__breadcrumb = [['label' => 'التسكين الشبكي']];
     .color-3 { border-color: rgba(217,92,88,0.3) !important; background: linear-gradient(135deg, rgba(217,92,88,0.12), rgba(217,92,88,0.04)) !important; }
     .color-4 { border-color: rgba(124,77,167,0.3) !important; background: linear-gradient(135deg, rgba(124,77,167,0.12), rgba(124,77,167,0.04)) !important; }
     .color-5 { border-color: rgba(20,158,162,0.3) !important; background: linear-gradient(135deg, rgba(20,158,162,0.12), rgba(20,158,162,0.04)) !important; }
+    /* Drag & Drop */
+    .drag-chip { display: inline-flex; align-items: center; gap: .35rem; padding: 0.35rem 0.75rem; margin: 0.2rem; border-radius: 20px; background: linear-gradient(135deg,#eaf4fd,#d9ecfa); border: 1.5px solid rgba(42,115,181,0.28); color: #1a3d5c; font-size: 0.84rem; font-weight: 600; cursor: grab; user-select: none; transition: transform .15s, box-shadow .15s; }
+    .drag-chip:active { cursor: grabbing; transform: scale(1.06); box-shadow: 0 4px 16px rgba(42,115,181,0.18); }
+    .drag-chip .chip-icon { opacity: 0.5; font-size: 0.72rem; }
+    .drag-chip .chip-type { font-size: 0.7rem; opacity: 0.65; font-weight: 400; }
+    .grid-cell.drag-over { background: rgba(15,159,145,0.15) !important; box-shadow: inset 0 0 0 2px #0f9f91; }
+    .grid-cell.drag-invalid { background: rgba(217,92,88,0.1) !important; box-shadow: inset 0 0 0 2px #d95c58; }
+    #coursesPanel .panel-body { max-height: 200px; overflow-y: auto; }
 </style>
 
 <!-- Switch Navigation -->
@@ -97,6 +105,40 @@ $__breadcrumb = [['label' => 'التسكين الشبكي']];
     </div>
 </div>
 
+<!-- Draggable Courses Panel -->
+<?php if ($canAdmin || $canSchedule): ?>
+<div class="card card-outline card-success" id="coursesPanel" style="display:none;">
+    <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-hand-rock ml-1"></i> اسحب المقرر إلى الجدول</h3>
+        <div class="card-tools">
+            <?php if ($canAdmin): ?>
+            <select id="dragMemberSelect" class="form-control form-control-sm d-inline-block" style="width:220px;">
+                <option value="">-- اختر عضواً لتحميل مقرراته --</option>
+                <?php foreach ($members as $m): ?>
+                    <option value="<?= $m['member_id'] ?>"><?= e($m['member_name']) ?></option>
+                <?php endforeach; ?>
+            </select>
+            <?php endif; ?>
+        </div>
+    </div>
+    <div class="card-body panel-body py-2" id="dragCoursesContainer">
+        <?php if (!$canAdmin && !empty($myCourses)): ?>
+            <?php foreach ($myCourses as $mc): ?>
+            <span class="drag-chip" draggable="true" data-mc-id="<?= $mc['member_course_id'] ?>" data-subject="<?= e($mc['subject_name']) ?>">
+                <i class="fas fa-grip-vertical chip-icon"></i>
+                <?= e($mc['subject_name']) ?>
+                <span class="chip-type">(<?= e($mc['section_name'] ?: $mc['division_name'] ?: '') ?>)</span>
+            </span>
+            <?php endforeach; ?>
+        <?php elseif (!$canAdmin): ?>
+            <p class="text-muted mb-0">لا توجد مقررات مكلّف بها</p>
+        <?php else: ?>
+            <p class="text-muted mb-0" id="dragPlaceholder">اختر عضواً أعلاه لتحميل مقرراته</p>
+        <?php endif; ?>
+    </div>
+</div>
+<?php endif; ?>
+
 <!-- Grid Table -->
 <div class="card">
     <div class="card-header">
@@ -116,6 +158,7 @@ $__breadcrumb = [['label' => 'التسكين الشبكي']];
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title"><i class="fas fa-plus-circle ml-1"></i> إضافة محاضرة</h5>
+                <span id="modalDragBadge" class="badge badge-success d-none mr-2" style="font-size:.78rem;"><i class="fas fa-hand-rock ml-1"></i> سحب وإفلات</span>
                 <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
             </div>
             <div class="modal-body">
@@ -336,9 +379,32 @@ $__breadcrumb = [['label' => 'التسكين الشبكي']];
                 });
             });
         });
+
+        // --- Drag & Drop on grid cells ---
+        container.querySelectorAll('.grid-cell').forEach(function(cell) {
+            cell.addEventListener('dragover', function(ev) {
+                ev.preventDefault();
+                ev.dataTransfer.dropEffect = 'copy';
+                cell.classList.add('drag-over');
+            });
+            cell.addEventListener('dragleave', function() {
+                cell.classList.remove('drag-over');
+                cell.classList.remove('drag-invalid');
+            });
+            cell.addEventListener('drop', function(ev) {
+                ev.preventDefault();
+                cell.classList.remove('drag-over');
+                var mcId = ev.dataTransfer.getData('text/mc-id');
+                var subjectName = ev.dataTransfer.getData('text/subject');
+                if (!mcId) return;
+                var day = cell.getAttribute('data-day');
+                var slotKey = cell.getAttribute('data-slot');
+                openAddModal(day, slotKey, mcId, subjectName);
+            });
+        });
     }
 
-    function openAddModal(day, slotKey) {
+    function openAddModal(day, slotKey, prefilledMcId, prefilledSubject) {
         var parts = slotKey.split('|');
         document.getElementById('modalDay').textContent = day;
         document.getElementById('modalSlot').textContent = parts[0] + ' (' + parts[1] + ' - ' + parts[2] + ')';
@@ -351,11 +417,38 @@ $__breadcrumb = [['label' => 'التسكين الشبكي']];
             return;
         }
 
+        var dragBadge = document.getElementById('modalDragBadge');
+
         // Reset course select
         if (!CAN_ADMIN) {
             // Keep pre-filled courses for normal user
         } else {
             document.getElementById('modalCourse').innerHTML = '<option value="">-- اختر العضو أولاً --</option>';
+        }
+
+        // If dragged, pre-select the course
+        if (prefilledMcId) {
+            dragBadge.classList.remove('d-none');
+            var cs = document.getElementById('modalCourse');
+            // Try to select existing option
+            var found = false;
+            for (var i = 0; i < cs.options.length; i++) {
+                if (cs.options[i].value == prefilledMcId) {
+                    cs.value = prefilledMcId;
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                // Add and select it
+                var opt = document.createElement('option');
+                opt.value = prefilledMcId;
+                opt.textContent = prefilledSubject || 'مقرر #' + prefilledMcId;
+                opt.selected = true;
+                cs.appendChild(opt);
+            }
+        } else {
+            dragBadge.classList.add('d-none');
         }
 
         $('#addEntryModal').modal('show');
@@ -456,7 +549,63 @@ $__breadcrumb = [['label' => 'التسكين الشبكي']];
     }
 
     // Apply filter button
-    document.getElementById('btnApplyFilter').addEventListener('click', loadGrid);
+    document.getElementById('btnApplyFilter').addEventListener('click', function() {
+        loadGrid();
+        var cp = document.getElementById('coursesPanel');
+        if (cp) cp.style.display = '';
+    });
+
+    // --- Drag chip init ---
+    function initDragChips() {
+        document.querySelectorAll('.drag-chip[draggable]').forEach(function(chip) {
+            chip.addEventListener('dragstart', function(ev) {
+                ev.dataTransfer.setData('text/mc-id', chip.getAttribute('data-mc-id'));
+                ev.dataTransfer.setData('text/subject', chip.getAttribute('data-subject'));
+                ev.dataTransfer.effectAllowed = 'copy';
+                chip.style.opacity = '0.5';
+            });
+            chip.addEventListener('dragend', function() {
+                chip.style.opacity = '1';
+            });
+        });
+    }
+    initDragChips();
+
+    // Admin: load courses for drag panel when member selected
+    if (CAN_ADMIN) {
+        var dragMemberSel = document.getElementById('dragMemberSelect');
+        if (dragMemberSel) {
+            dragMemberSel.addEventListener('change', function() {
+                var mid = this.value;
+                var ctnr = document.getElementById('dragCoursesContainer');
+                if (!mid) {
+                    ctnr.innerHTML = '<p class="text-muted mb-0">اختر عضواً أعلاه لتحميل مقرراته</p>';
+                    return;
+                }
+                ctnr.innerHTML = '<span class="text-muted"><span class="spinner-border spinner-border-sm"></span> جاري التحميل...</span>';
+                fetch(BASE + '/admin-scheduling/member-courses/' + mid, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (!data.success || !data.courses || data.courses.length === 0) {
+                        ctnr.innerHTML = '<p class="text-muted mb-0">لا توجد مقررات لهذا العضو</p>';
+                        return;
+                    }
+                    var html = '';
+                    data.courses.forEach(function(c) {
+                        html += '<span class="drag-chip" draggable="true" data-mc-id="' + c.member_course_id + '" data-subject="' + esc(c.subject_name) + '">';
+                        html += '<i class="fas fa-grip-vertical chip-icon"></i> ';
+                        html += esc(c.subject_name);
+                        html += ' <span class="chip-type">(' + esc(c.section_name || c.division_name || '') + ')</span>';
+                        html += '</span>';
+                    });
+                    ctnr.innerHTML = html;
+                    initDragChips();
+                });
+            });
+        }
+    }
 
     // Init Select2
     $(document).ready(function() {
