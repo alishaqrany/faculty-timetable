@@ -68,7 +68,7 @@ class ReportsController extends \Controller
 
         // ── Section 4: Faculty workload ──────────────────────────────
         $memberWorkload = $db->fetchAll(
-            "SELECT m.member_name, m.rank,
+            "SELECT m.member_name, m.degree,
                     d.department_name,
                     COUNT(DISTINCT mc.member_course_id)    AS assigned_courses,
                     COUNT(DISTINCT t.timetable_id)         AS placed_lectures
@@ -77,7 +77,7 @@ class ReportsController extends \Controller
              LEFT JOIN member_courses mc ON mc.member_id = m.member_id
              LEFT JOIN timetable t  ON t.member_course_id = mc.member_course_id
              WHERE m.is_active = 1
-             GROUP BY m.member_id, m.member_name, m.rank, d.department_name
+             GROUP BY m.member_id, m.member_name, m.degree, d.department_name
              ORDER BY placed_lectures DESC"
         );
 
@@ -150,9 +150,9 @@ class ReportsController extends \Controller
             "SELECT d.department_name, l.level_name,
                     COUNT(DISTINCT sec.section_id) AS section_count
              FROM departments d
-             LEFT JOIN divisions div ON div.department_id = d.department_id AND div.is_active = 1
-             LEFT JOIN levels l ON l.level_id = div.level_id
-             LEFT JOIN sections sec ON sec.division_id = div.division_id AND sec.is_active = 1
+             LEFT JOIN divisions dv ON dv.department_id = d.department_id AND dv.is_active = 1
+             LEFT JOIN levels l ON l.level_id = dv.level_id
+             LEFT JOIN sections sec ON sec.division_id = dv.division_id AND sec.is_active = 1
              WHERE d.is_active = 1
              GROUP BY d.department_id, d.department_name, l.level_id, l.level_name
              ORDER BY d.department_name, l.level_name"

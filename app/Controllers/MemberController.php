@@ -43,6 +43,9 @@ class MemberController extends \Controller
 
         $data['is_active'] = 1;
         $data['ranking'] = Member::count() + 1;
+        if (empty($data['join_date'])) {
+            $data['join_date'] = null;
+        }
         $memberId = Member::create($data);
 
         // Auto-create user account
@@ -94,6 +97,9 @@ class MemberController extends \Controller
         if ($data === false) $this->redirect("/members/{$id}/edit", 'يرجى تصحيح الأخطاء', 'error');
 
         $data['is_active'] = $this->request->input('is_active', 1);
+        if (empty($data['join_date'])) {
+            $data['join_date'] = null;
+        }
         Member::updateById((int)$id, $data);
         AuditService::log('UPDATE', 'members', (int)$id, $member, $data);
 

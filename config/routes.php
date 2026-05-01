@@ -17,6 +17,9 @@ $router->group('', ['AuthMiddleware', 'CsrfMiddleware'], function (Router $route
     // Dashboard
     $router->get('/dashboard', 'DashboardController@index');
 
+    // Reports & Statistics
+    $router->get('/reports', 'ReportsController@index');
+
     // Profile
     $router->get('/profile', 'AuthController@profile');
     $router->post('/profile', 'AuthController@updateProfile');

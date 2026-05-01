@@ -100,6 +100,18 @@ $__page_title = 'لوحة التحكم';
 <!-- ══════════════════════════════════════════════════════════════
      ROW 3 — Bar chart + Recent activity
 ═══════════════════════════════════════════════════════════════════ -->
+<div class="row mb-3">
+    <div class="col-12 text-left">
+        <a href="<?= url('/reports') ?>" class="btn btn-outline-primary">
+            <i class="fas fa-chart-bar ml-1"></i> عرض التقارير والإحصائيات الكاملة
+            <i class="fas fa-arrow-left mr-1"></i>
+        </a>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     ROW 4 — Day distribution + Recent activity
+═══════════════════════════════════════════════════════════════════ -->
 <div class="row">
     <div class="col-md-8">
         <div class="card card-outline card-primary">
@@ -137,7 +149,7 @@ $__page_title = 'لوحة التحكم';
 </div>
 
 <!-- ══════════════════════════════════════════════════════════════
-     ROW 4 — Classroom occupancy + Faculty workload
+     ROW 5 — Classroom occupancy + Faculty workload
 ═══════════════════════════════════════════════════════════════════ -->
 <div class="row">
     <div class="col-md-7">
@@ -155,7 +167,7 @@ $__page_title = 'لوحة التحكم';
 </div>
 
 <!-- ══════════════════════════════════════════════════════════════
-     ROW 5 — Department load + Daily utilization table
+     ROW 6 — Department load + Daily utilization table
 ═══════════════════════════════════════════════════════════════════ -->
 <div class="row">
     <div class="col-md-7">

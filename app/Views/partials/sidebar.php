@@ -71,6 +71,7 @@ $sectionBlueprint = [
             ['label' => 'التسكين', 'path' => '/scheduling', 'icon' => 'far fa-calendar-check', 'permission' => 'scheduling'],
             ['label' => 'إدارة الأولوية', 'path' => '/priority', 'icon' => 'fas fa-sort-amount-up', 'permission' => 'priority'],
             ['label' => 'الجدول الدراسي', 'path' => '/timetable', 'icon' => 'far fa-clock', 'permission' => 'timetable'],
+            ['label' => 'التقارير والإحصائيات', 'path' => '/reports', 'icon' => 'fas fa-chart-bar', 'permission' => null],
         ],
     ],
     [

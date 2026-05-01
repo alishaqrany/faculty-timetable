@@ -1,37 +1,50 @@
 # Project Guidelines
 
 ## Code Style
-- Use plain PHP + MySQLi style consistent with the existing codebase (procedural scripts with inline HTML).
-- Preserve existing naming conventions and file patterns (for example: `edit_*.php`, `delete_*.php`, and module-local `navbar.php`).
+- Use the MVC architecture established in the project: Controllers in `app/Controllers/`, Models in `app/Models/`, Views in `app/Views/`, Services in `app/Services/`.
+- Follow the existing naming conventions: PascalCase for classes, camelCase for methods, snake_case for database columns.
 - Keep Arabic UI text and RTL behavior intact unless the task explicitly requests text/design changes.
-- Prefer minimal, targeted edits in existing files over broad refactors.
+- Use prepared statements for all database queries via `core/Database.php`.
+- Follow the middleware pattern for cross-cutting concerns (auth, CSRF, RBAC).
 
 ## Architecture
-- This is a monolithic PHP application with feature folders: `members/`, `subjects/`, `sections/`, `sessions/`, `classrooms/`, `departments/`, `levels/`, and `membercourses/`.
+- This is a monolithic PHP MVC application with a custom framework.
 - Entry flow:
-  - `install.php`: initial DB config/table setup.
-  - `login.php`: authentication.
-  - `index.php`: dashboard and navigation.
-- Database connection is centralized in `db_config.php` and imported via `require_once`.
-- Each feature folder typically owns its list/create/edit/delete pages and a local `navbar.php`.
+  - `public/index.php`: Front Controller → `core/Application.php` → `core/Router.php` → Middleware → Controller.
+  - `public/install.php`: Standalone installation wizard.
+- Core framework classes are in `core/` (Application, Router, Controller, Model, Database, Request, Session, View).
+- Routes are defined in `config/routes.php` using `$router->get()`, `$router->post()`, `$router->resource()`, and `$router->group()`.
+- Database connection is managed by `core/Database.php` singleton, configured via `config/database.php`.
+- Middleware pipeline: `app/Middleware/` (AuthMiddleware, CsrfMiddleware, RbacMiddleware, ApiAuthMiddleware, ApiRoleMiddleware, RateLimitMiddleware).
+- Business logic is in `app/Services/` (PriorityService, SchedulingService, ExportService, BackupService, etc.).
+- Helper functions are in `app/Helpers/functions.php`.
+- Views use layouts (`app/Views/layouts/`) and partials (`app/Views/partials/`).
+- Legacy compatibility files exist in `core/` (auth.php, bootstrap.php, csrf.php, flash.php) — do not remove.
 
 ## Build and Test
-- No package manager, build system, or automated tests are configured.
+- No package manager or build system for the PHP backend.
 - Run locally with XAMPP (Apache + MySQL) and open app pages in a browser.
-- Validate changes manually by exercising affected flows (login, CRUD actions, redirects, flash messages, and table rendering).
-- Before testing app behavior, ensure DB schema exists (via `install.php`) and `db_config.php` points to the active local database.
+- Validate changes manually by exercising affected flows.
+- Before testing, ensure DB schema exists (via `public/install.php`) and `config/database.php` is configured.
+- For Flutter mobile app: `flutter analyze` and `flutter test`.
 
 ## Conventions
-- Session/auth pattern is required on protected pages:
-  - call `session_start()` early.
-  - redirect to `login.php` when `$_SESSION['member_id']` is missing.
-- Reuse the existing include approach:
-  - root pages include `navbar.php` from root.
-  - module pages include their local `navbar.php` and use relative `require_once("../db_config.php")` when needed.
-- Keep changes backward-compatible with current schema and existing query/result handling unless explicitly asked to redesign.
+- All protected routes go through `AuthMiddleware` (checks session authentication).
+- CSRF protection is applied via `CsrfMiddleware` on POST/PUT/DELETE within authenticated route groups.
+- RBAC permissions follow `module.action` format (e.g., `departments.view`, `scheduling.manage`).
+- API routes use `ApiAuthMiddleware` (Bearer token) and optionally `ApiRoleMiddleware` for admin endpoints.
+- Flash messages use `Session::flash()` and are displayed via the `partials/flash.php` partial.
+- Helper functions: `url()`, `asset()`, `csrf_field()`, `auth()`, `can()`, `config()`, `old()`, `e()`.
+
+## Key Files
+- Config: `config/app.php`, `config/database.php`, `config/routes.php`, `config/permissions.php`, `config/cloud.php`
+- Models: 22 models in `app/Models/` (User, Role, Department, Level, Member, Subject, Division, Section, Classroom, Session, MemberCourse, Timetable, etc.)
+- Services: `app/Services/PriorityService.php`, `SchedulingService.php`, `ExportService.php`, `BackupService.php`, `DataTransferService.php`
+- API: `app/Controllers/Api/` (legacy) and `app/Controllers/Api/V1/` (mobile API v1)
 
 ## Safety and Pitfalls
-- Many queries are string-interpolated; avoid introducing additional SQL injection risk.
-- Prefer prepared statements for new query code, but do not partially refactor unrelated files unless requested.
-- Do not expose raw DB errors to end users in new code paths.
-- `db_config.php` is generated/edited by setup flow; preserve its expected variable names: `$servername`, `$username`, `$password`, `$dbname`, `$conn`.
+- All queries must use prepared statements via `core/Database.php`.
+- Do not expose raw DB errors to end users.
+- `config/database.php` is generated by the installer; preserve its structure.
+- `storage/` directory must be writable for backups, logs, exports, and rate limiting.
+- Respect the middleware pipeline order when adding new routes.
