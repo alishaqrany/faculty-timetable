@@ -1,6 +1,6 @@
 # Timetable Management System
 
-University timetable management system built with PHP and MySQL.
+نظام إدارة الجداول الدراسية الجامعية — University timetable management system built with PHP MVC and MySQL.
 
 ## Readme Languages
 
@@ -9,18 +9,41 @@ University timetable management system built with PHP and MySQL.
 
 ## Project At A Glance
 
-- Current application entry point: `public/index.php` internally, served from the project root
-- Installation wizard: `install.php` from the project root
-- Main application layers: `app/`, `core/`, `config/`, `public/`
-- Legacy reference code: `_legacy/`
-- Storage and runtime files: `storage/`
+| Item | Path |
+|------|------|
+| Web entry point | `public/index.php` (via front controller) |
+| Installation wizard | `public/install.php` |
+| Application layers | `app/`, `core/`, `config/`, `public/` |
+| Database migrations | `database/migrations/` (35 migration files) |
+| Mobile app (Flutter) | `mobile_app/` |
+| Legacy reference code | `_legacy/` |
+| Storage and runtime | `storage/` |
+| Public homepage | `HomeController@index` at `/` |
 
 ## Quick Start
 
-1. Run Apache and MySQL.
+1. Run Apache and MySQL (e.g. via XAMPP).
 2. Use PHP 8.0 or newer.
-3. Open `http://localhost/timetable/install.php`.
-4. Complete the installer, then open `http://localhost/timetable/` for the public home page or `http://localhost/timetable/login` for الإدارة.
+3. Open `http://localhost/timetable/install.php` to run the setup wizard.
+4. Complete the installer, then:
+   - Public home page: `http://localhost/timetable/`
+   - Admin login: `http://localhost/timetable/login`
+   - Dashboard: `http://localhost/timetable/dashboard`
+
+## Key Features
+
+- MVC architecture with custom router, middleware, and templating
+- RBAC permission system (admin, dept_head, faculty, viewer)
+- Priority-based scheduling with 4 modes (disabled, global, parallel, sequential)
+- AJAX-based dynamic filtering for timetable and scheduling views
+- Academic year and semester management
+- Division and section hierarchy
+- Cloud backup (Google Drive, Supabase, Firebase)
+- Data transfer (SQL/Excel import/export)
+- Reports and statistics dashboard
+- Mobile API v1 with Bearer token authentication
+- Flutter mobile app for students and administrators
+- Audit logs, notifications, and system settings
 
 ## Documentation
 

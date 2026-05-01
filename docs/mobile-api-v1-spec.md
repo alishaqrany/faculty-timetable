@@ -6,19 +6,22 @@ This document tracks the implemented mobile API layer that was added on top of t
 
 - New namespace: `Api\V1` controllers.
 - Unified API response contract through `BaseApiController`.
-- New role middleware for admin mobile endpoints.
+- New role middleware for admin mobile endpoints (`ApiRoleMiddleware`).
 - New route groups in `config/routes.php` under `/api/v1/*`.
 - DB index migration for mobile-heavy timetable queries.
+- Rate limiting on all API routes via `RateLimitMiddleware`.
 
 ## Implemented backend files
 
-- `app/Controllers/Api/V1/BaseApiController.php`
-- `app/Controllers/Api/V1/AuthController.php`
-- `app/Controllers/Api/V1/StudentController.php`
-- `app/Controllers/Api/V1/LookupController.php`
-- `app/Controllers/Api/V1/AdminController.php`
-- `app/Middleware/ApiRoleMiddleware.php`
-- `database/migrations/035_add_mobile_api_indexes.php`
+- `app/Controllers/Api/V1/BaseApiController.php` — Unified response helpers
+- `app/Controllers/Api/V1/AuthController.php` — Login, logout, me
+- `app/Controllers/Api/V1/StudentController.php` — Student timetable endpoints
+- `app/Controllers/Api/V1/LookupController.php` — Reference data endpoints
+- `app/Controllers/Api/V1/AdminController.php` — Admin CRUD endpoints
+- `app/Middleware/ApiAuthMiddleware.php` — Bearer token authentication
+- `app/Middleware/ApiRoleMiddleware.php` — Admin role verification
+- `app/Middleware/RateLimitMiddleware.php` — Request rate limiting
+- `database/migrations/035_add_mobile_api_indexes.php` — DB indexes
 
 ## Base URL and auth
 
@@ -26,6 +29,7 @@ This document tracks the implemented mobile API layer that was added on top of t
 - Token type: Bearer
 - Header:
   - `Authorization: Bearer <token>`
+- Tokens are stored as hashes in the `api_tokens` table
 
 ## Response contract
 
@@ -64,22 +68,27 @@ This document tracks the implemented mobile API layer that was added on top of t
 
 ## Endpoints
 
-## Auth
+### Auth
 
 - `POST /api/v1/auth/login`
   - body: `username`, `password` (form fields)
   - returns: token, token type, expires date, user data
 - `POST /api/v1/auth/logout` (auth required)
 - `GET /api/v1/me` (auth required)
+  - returns: user profile data
 
-## Student
+### Student
 
 - `GET /api/v1/students/timetable?department_id=&level_id=`
+  - returns: timetable entries for a department/level combination
 - `GET /api/v1/students/section-timetable?section_id=`
+  - returns: timetable entries for a specific section
 - `GET /api/v1/students/today-lectures?section_id=&date=`
+  - returns: today's lectures filtered by section
 - `GET /api/v1/students/today-lectures?department_id=&level_id=&date=`
+  - returns: today's lectures filtered by department/level
 
-## Lookups
+### Lookups
 
 - `GET /api/v1/lookups/departments`
 - `GET /api/v1/lookups/levels`
@@ -88,7 +97,7 @@ This document tracks the implemented mobile API layer that was added on top of t
 - `GET /api/v1/lookups/sessions`
 - `GET /api/v1/lookups/classrooms`
 
-## Admin (Phase 1)
+### Admin (Phase 1)
 
 Admin routes require `ApiRoleMiddleware` and currently allow `admin` and `dept_head`.
 
@@ -113,11 +122,30 @@ Admin routes require `ApiRoleMiddleware` and currently allow `admin` and `dept_h
   - `POST /api/v1/admin/sessions/{id}`
   - `POST /api/v1/admin/sessions/{id}/delete`
 
+## Legacy API (`/api/*`)
+
+In addition to the v1 API, there is a legacy API layer:
+
+- `POST /api/auth/login` — Legacy authentication
+- `GET /api/timetable` — Timetable data
+- `GET /api/departments` — Departments list
+- `GET /api/members` — Members list
+- `GET /api/classrooms` — Classrooms list
+- `GET /api/subjects` — Subjects list
+- `GET /api/sections` — Sections list
+- `GET /api/sessions` — Sessions list
+
+Legacy API controllers: `Api\AuthController`, `Api\TimetableController`.
+
 ## Query conventions (admin list endpoints)
 
 - `page` default `1`
 - `per_page` default `20`, max `100`
 - `q` for free text search
+
+## Rate limiting
+
+All API routes are rate-limited via `RateLimitMiddleware`. Rate limit data is stored in `storage/rate_limits/`.
 
 ## Added database indexes
 

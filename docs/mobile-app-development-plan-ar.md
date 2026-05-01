@@ -4,27 +4,32 @@
 
 تطوير التطبيق من النسخة الحالية إلى نسخة إنتاجية متكاملة للطلاب والإدارة مع جودة عالية وقابلية توسع.
 
-## المرحلة 0 - الوضع الحالي (Completed)
+## المرحلة 0 - الوضع الحالي (Completed ✅)
 
 - إنشاء تطبيق Flutter أساسي.
-- تنفيذ تسجيل الدخول + إدارة الجلسة.
+- تنفيذ تسجيل الدخول + إدارة الجلسة عبر Provider.
+- تصميم واجهة Material 3 مع دعم عربي (RTL).
 - تنفيذ شاشات الطالب:
-  - جدول الفرقة.
-  - جدول السكشن.
-  - محاضرات اليوم.
+  - جدول الفرقة (YearTimetablePage).
+  - جدول السكشن (SectionTimetablePage).
+  - محاضرات اليوم (TodayLecturesPage).
 - تنفيذ API v1:
-  - Auth
-  - Student
-  - Lookups
-  - Admin phase 1
-- إضافة migration للفهارس.
+  - Auth (login, logout, me)
+  - Student (timetable, section-timetable, today-lectures)
+  - Lookups (departments, levels, sections, subjects, sessions, classrooms)
+  - Admin phase 1 (CRUD for departments, subjects, sections, sessions)
+- إضافة migration للفهارس (035).
+- إضافة Provider لإدارة الحالة (AuthProvider, TimetableProvider).
+- إضافة CacheManager للتخزين المؤقت المحلي.
+- إنشاء عناصر واجهة مشتركة (EmptyState, ErrorState, LoadingOverlay, LectureCard).
+- تطبيق AppTheme متقدم مع خطوط عربية.
 - نجاح `flutter analyze` و `flutter test`.
 
 ## المرحلة 1 - تثبيت جودة الواجهة (1-2 أسبوع)
 
 المخرجات:
-- تحسين UX/UI للشاشات الحالية (loading, empty states, error states).
-- إضافة فلاتر أكثر وضوحا (اليوم، القسم، الفرقة، السكشن).
+- تحسين UX/UI للشاشات الحالية (حالات التحميل، الحالات الفارغة، حالات الخطأ) — ✅ منفذ جزئياً.
+- إضافة فلاتر أكثر وضوحاً (اليوم، القسم، الفرقة، السكشن).
 - دعم pagination فعلي في شاشات القوائم الكبيرة.
 - تحسين الرسائل العربية وتوحيد النصوص.
 
@@ -56,13 +61,13 @@
 - تحسين سياسات rate limit لمسارات حساسة.
 
 المعايير:
-- جلسات أكثر أمانًا.
+- جلسات أكثر أماناً.
 - مراقبة أفضل لسلوك API.
 
 ## المرحلة 4 - الأداء والاعتمادية (1-2 أسبوع)
 
 المخرجات:
-- caching محلي للـ lookups.
+- تعزيز CacheManager بسياسات TTL متقدمة — ✅ منفذ جزئياً.
 - retry strategy للشبكة.
 - تقليل payloads وإضافة lightweight responses عند الحاجة.
 - profiling لاستعلامات الجدول الثقيلة.
@@ -88,10 +93,12 @@
 ## Backlog مقترح (بعد MVP)
 
 - إشعارات push لمحاضرات اليوم والتغييرات.
-- Offline mode لآخر جداول تمت مزامنتها.
+- Offline mode كامل لآخر جداول تمت مزامنتها.
 - تقويم أسبوعي تفاعلي.
-- دعم تعدد اللغات (عربي/إنجليزي).
+- دعم تعدد اللغات (عربي/إنجليزي) الكامل.
 - تحليلات استخدام داخل التطبيق.
+- شاشات إدارة الأولوية من الموبايل.
+- عرض التقارير والإحصائيات من الموبايل.
 
 ## إدارة المخاطر
 
@@ -108,4 +115,5 @@
 - متوسط زمن تحميل شاشة محاضرات اليوم.
 - نسبة الأخطاء 4xx/5xx في `api/v1`.
 - معدل الأعطال crash-free sessions.
-- نسبة إتمام تدفق الطالب (Login -> Today Lectures).
+- نسبة إتمام تدفق الطالب (Login → Today Lectures).
+- نسبة استخدام التخزين المؤقت (cache hit rate).
