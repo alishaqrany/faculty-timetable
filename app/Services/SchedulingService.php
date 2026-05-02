@@ -11,7 +11,9 @@ class SchedulingService
         int $classroomId,
         int $sessionId,
         int $memberCourseId,
-        ?int $excludeTimetableId = null
+        ?int $excludeTimetableId = null,
+        ?int $semesterId = null,
+        ?int $academicYearId = null
     ): array {
         $db = \Database::getInstance();
         $conflicts = [];
@@ -33,6 +35,17 @@ class SchedulingService
             $baseParams[] = $excludeTimetableId;
         }
 
+        // Semester/year awareness: only conflict with same semester/year
+        $semClause = '';
+        if ($semesterId) {
+            $semClause .= ' AND (t.semester_id IS NULL OR t.semester_id = ?)';
+            $baseParams[] = $semesterId;
+        }
+        if ($academicYearId) {
+            $semClause .= ' AND (t.academic_year_id IS NULL OR t.academic_year_id = ?)';
+            $baseParams[] = $academicYearId;
+        }
+
         // 1. Classroom conflict: same classroom + same session
         $params = array_merge([$classroomId, $sessionId], $baseParams);
         $classroomConflict = $db->fetch(
@@ -40,7 +53,7 @@ class SchedulingService
              FROM timetable t
              JOIN classrooms c ON t.classroom_id = c.classroom_id
              JOIN sessions sess ON t.session_id = sess.session_id
-             WHERE t.classroom_id = ? AND t.session_id = ? $excludeClause
+             WHERE t.classroom_id = ? AND t.session_id = ? $excludeClause $semClause
              LIMIT 1",
             $params
         );
@@ -86,7 +99,7 @@ class SchedulingService
              JOIN member_courses mc2 ON t.member_course_id = mc2.member_course_id
              JOIN subjects s2 ON mc2.subject_id = s2.subject_id
              JOIN sessions sess ON t.session_id = sess.session_id
-             WHERE t.session_id = ? $excludeClause";
+             WHERE t.session_id = ? $excludeClause $semClause";
 
         $overlappingClasses = $db->fetchAll($overlapSQL, $sessParams);
         
@@ -135,7 +148,7 @@ class SchedulingService
              JOIN member_courses mc2 ON t.member_course_id = mc2.member_course_id
              JOIN faculty_members fm ON mc2.member_id = fm.member_id
              JOIN sessions sess ON t.session_id = sess.session_id
-             WHERE t.session_id = ? AND mc2.member_id = ? $excludeClause
+             WHERE t.session_id = ? AND mc2.member_id = ? $excludeClause $semClause
              LIMIT 1",
             $params
         );
@@ -143,7 +156,66 @@ class SchedulingService
             $conflicts[] = "عضو هيئة التدريس \"{$memberConflict['member_name']}\" لديه محاضرة في نفس الفترة ({$memberConflict['day']} - {$memberConflict['session_name']})";
         }
 
+        // 4. Duplicate entry: same member_course + same session
+        $dupParams = array_merge([$memberCourseId, $sessionId], $baseParams);
+        $dupConflict = $db->fetch(
+            "SELECT t.timetable_id FROM timetable t
+             WHERE t.member_course_id = ? AND t.session_id = ? $excludeClause $semClause
+             LIMIT 1",
+            $dupParams
+        );
+        if ($dupConflict) {
+            $conflicts[] = 'هذا المقرر مسكّن بالفعل في نفس الفترة';
+        }
+
         return $conflicts;
+    }
+
+    /**
+     * Atomically check conflicts then insert — prevents race conditions.
+     * Returns ['success' => bool, 'timetable_id' => int|null, 'conflicts' => array]
+     */
+    public static function storeEntry(array $data, ?int $semesterId = null, ?int $academicYearId = null): array
+    {
+        $db = \Database::getInstance();
+
+        try {
+            $db->beginTransaction();
+
+            // Lock the relevant rows to prevent concurrent inserts
+            $db->fetch(
+                "SELECT 1 FROM timetable WHERE session_id = ? FOR UPDATE",
+                [(int)$data['session_id']]
+            );
+
+            $conflicts = self::checkConflicts(
+                (int)$data['classroom_id'],
+                (int)$data['session_id'],
+                (int)$data['member_course_id'],
+                null,
+                $semesterId,
+                $academicYearId
+            );
+
+            if (!empty($conflicts)) {
+                $db->rollback();
+                return ['success' => false, 'timetable_id' => null, 'conflicts' => $conflicts];
+            }
+
+            // Add semester/year if available
+            if ($semesterId)     $data['semester_id'] = $semesterId;
+            if ($academicYearId) $data['academic_year_id'] = $academicYearId;
+
+            $id = \App\Models\Timetable::create($data);
+
+            $db->commit();
+            return ['success' => true, 'timetable_id' => $id, 'conflicts' => []];
+
+        } catch (\Throwable $e) {
+            $db->rollback();
+            error_log('SchedulingService::storeEntry error: ' . $e->getMessage());
+            return ['success' => false, 'timetable_id' => null, 'conflicts' => ['خطأ داخلي أثناء التسكين']];
+        }
     }
 
     /**

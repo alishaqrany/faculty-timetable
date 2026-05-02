@@ -159,28 +159,23 @@ class GridSchedulingController extends \Controller
             $this->json(['success' => false, 'message' => 'ليس دورك حالياً في نظام الأولوية'], 403);
         }
 
-        // Check conflicts
-        $conflicts = SchedulingService::checkConflicts(
-            (int)$data['classroom_id'],
-            (int)$data['session_id'],
-            (int)$data['member_course_id']
-        );
+        // Atomic: check conflicts + insert in single transaction
+        $data['created_by'] = $this->session->userId();
+        $data['status'] = 'مسودة';
 
-        if ($conflicts) {
+        $result = SchedulingService::storeEntry($data);
+
+        if (!$result['success']) {
             $this->json([
                 'success'   => false,
-                'message'   => 'تعارض: ' . implode(' | ', $conflicts),
-                'conflicts' => $conflicts,
+                'message'   => 'تعارض: ' . implode(' | ', $result['conflicts']),
+                'conflicts' => $result['conflicts'],
             ], 409);
         }
 
-        $data['created_by'] = $this->session->userId();
-        $data['status'] = 'مسودة';
-        $id = Timetable::create($data);
+        AuditService::log('GRID_CREATE', 'timetable', $result['timetable_id'], null, $data);
 
-        AuditService::log('GRID_CREATE', 'timetable', $id, null, $data);
-
-        $this->json(['success' => true, 'message' => 'تم إضافة المحاضرة بنجاح ✓', 'timetable_id' => $id]);
+        $this->json(['success' => true, 'message' => 'تم إضافة المحاضرة بنجاح ✓', 'timetable_id' => $result['timetable_id']]);
     }
 
     /**

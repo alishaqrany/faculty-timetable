@@ -159,24 +159,19 @@ class AdminSchedulingController extends \Controller
             $this->redirect('/admin-scheduling', $msg, 'error');
         }
 
-        // Check conflicts
-        $conflicts = SchedulingService::checkConflicts(
-            (int)$data['classroom_id'],
-            (int)$data['session_id'],
-            (int)$data['member_course_id']
-        );
+        // Atomic: check conflicts + insert in single transaction
+        $data['created_by'] = $this->session->userId();
+        $data['status'] = 'مسودة';
 
-        if ($conflicts) {
-            $msg = 'تعارض في التسكين: ' . implode(' | ', $conflicts);
-            if ($this->request->isAjax()) $this->json(['success' => false, 'message' => $msg, 'conflicts' => $conflicts], 409);
+        $result = SchedulingService::storeEntry($data);
+
+        if (!$result['success']) {
+            $msg = 'تعارض في التسكين: ' . implode(' | ', $result['conflicts']);
+            if ($this->request->isAjax()) $this->json(['success' => false, 'message' => $msg, 'conflicts' => $result['conflicts']], 409);
             $this->redirect('/admin-scheduling', $msg, 'error');
         }
 
-        $data['created_by'] = $this->session->userId();
-        $data['status'] = 'مسودة';
-        $id = Timetable::create($data);
-
-        AuditService::log('ADMIN_CREATE', 'timetable', $id, null, array_merge($data, ['on_behalf_of' => $mc['member_id']]));
+        AuditService::log('ADMIN_CREATE', 'timetable', $result['timetable_id'], null, array_merge($data, ['on_behalf_of' => $mc['member_id']]));
 
         // Notify the member
         $memberUser = \Database::getInstance()->fetch(
@@ -194,7 +189,7 @@ class AdminSchedulingController extends \Controller
         }
 
         if ($this->request->isAjax()) {
-            $this->json(['success' => true, 'message' => 'تم إضافة المحاضرة بنجاح ✓', 'timetable_id' => $id]);
+            $this->json(['success' => true, 'message' => 'تم إضافة المحاضرة بنجاح ✓', 'timetable_id' => $result['timetable_id']]);
         }
         $this->redirect('/admin-scheduling', 'تم إضافة المحاضرة في الجدول بنجاح ✓');
     }
@@ -232,21 +227,20 @@ class AdminSchedulingController extends \Controller
                 continue;
             }
 
-            $conflicts = SchedulingService::checkConflicts($classroomId, $sessionId, $mcId);
-            if ($conflicts) {
-                $results['failed']++;
-                $results['errors'][] = implode(' | ', $conflicts);
-                continue;
-            }
-
-            $data = [
+            $storeData = [
                 'member_course_id' => $mcId,
                 'classroom_id' => $classroomId,
                 'session_id' => $sessionId,
                 'created_by' => $this->session->userId(),
                 'status' => 'مسودة',
             ];
-            Timetable::create($data);
+
+            $result = SchedulingService::storeEntry($storeData);
+            if (!$result['success']) {
+                $results['failed']++;
+                $results['errors'][] = implode(' | ', $result['conflicts']);
+                continue;
+            }
             $results['added']++;
         }
 

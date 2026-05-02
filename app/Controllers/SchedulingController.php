@@ -121,23 +121,18 @@ class SchedulingController extends \Controller
             $this->redirect('/scheduling', 'غير مسموح: هذا التكليف لا يخصك', 'error');
         }
 
-        // Check conflicts
-        $conflicts = SchedulingService::checkConflicts(
-            (int)$data['classroom_id'],
-            (int)$data['session_id'],
-            (int)$data['member_course_id']
-        );
+        // Atomic: check conflicts + insert in single transaction
+        $data['created_by'] = $this->session->userId();
+        $data['status'] = 'مسودة';
 
-        if ($conflicts) {
-            $msg = 'تعارض في التسكين: ' . implode(' | ', $conflicts);
+        $result = SchedulingService::storeEntry($data);
+
+        if (!$result['success']) {
+            $msg = 'تعارض في التسكين: ' . implode(' | ', $result['conflicts']);
             $this->redirect('/scheduling', $msg, 'error');
         }
 
-        $data['created_by'] = $this->session->userId();
-        $data['status'] = 'مسودة';
-        $id = Timetable::create($data);
-
-        AuditService::log('CREATE', 'timetable', $id, null, $data);
+        AuditService::log('CREATE', 'timetable', $result['timetable_id'], null, $data);
 
         $this->redirect('/scheduling', 'تم إضافة المحاضرة في الجدول بنجاح ✓');
     }
