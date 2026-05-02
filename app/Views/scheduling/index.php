@@ -71,6 +71,27 @@ $priorityLabel = $priorityState['mode_label'] ?? 'معطل';
 </div>
 <?php endif; ?>
 
+<?php if ($isAdmin && empty($myCourses)): ?>
+<!-- Admin-specific guidance banner -->
+<div class="alert alert-info border-0 d-flex flex-wrap align-items-center justify-content-between" style="background: #e8f4fd; border-right: 4px solid #2196F3 !important; color: #0c5460;">
+    <div class="mb-2 mb-sm-0 d-flex align-items-center">
+        <i class="fas fa-info-circle ml-2" style="font-size: 1.4rem; color: #2196F3;"></i>
+        <strong style="font-size: 1.1rem;">أنت تتصفح كمدير نظام</strong>
+    </div>
+    <div class="d-flex flex-wrap" style="gap: 0.5rem;">
+        <a href="<?= url('/admin-scheduling') ?>" class="btn btn-primary btn-sm" style="text-decoration: none;">
+            <i class="fas fa-user-shield ml-1"></i> التسكين الإداري
+        </a>
+        <a href="<?= url('/grid-scheduling') ?>" class="btn btn-info btn-sm text-white" style="text-decoration: none;">
+            <i class="fas fa-th ml-1"></i> التسكين الشبكي
+        </a>
+        <a href="<?= url('/timetable') ?>" class="btn btn-dark btn-sm" style="text-decoration: none;">
+            <i class="far fa-clock ml-1"></i> عرض الجدول الكامل
+        </a>
+    </div>
+</div>
+<?php endif; ?>
+
 <!-- Filters -->
 <div class="card card-outline card-primary">
     <div class="card-header"><h3 class="card-title"><i class="fas fa-filter ml-1"></i> تصفية</h3></div>
