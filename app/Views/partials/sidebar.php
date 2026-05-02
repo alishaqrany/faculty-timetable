@@ -67,8 +67,10 @@ $permissions = [
 $schedulingViewMode = 'both';
 try {
     $svmRow = \Database::getInstance()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'scheduling_view_mode'");
-    if ($svmRow) $schedulingViewMode = $svmRow['setting_value'];
-} catch (\Throwable $e) {}
+    if ($svmRow)
+        $schedulingViewMode = $svmRow['setting_value'];
+} catch (\Throwable $e) {
+}
 
 $sectionBlueprint = [
     [
@@ -76,8 +78,8 @@ $sectionBlueprint = [
         'title' => ' ادارة التسكين',
         'icon' => 'fas fa-satellite-dish',
         'items' => array_filter([
-            in_array($schedulingViewMode, ['classic','both']) ? ['label' => 'التسكين', 'path' => '/scheduling', 'icon' => 'far fa-calendar-check', 'permission' => 'scheduling'] : null,
-            in_array($schedulingViewMode, ['grid','both']) ? ['label' => 'التسكين الشبكي', 'path' => '/grid-scheduling', 'icon' => 'fas fa-th', 'permission' => 'scheduling'] : null,
+            in_array($schedulingViewMode, ['classic', 'both']) ? ['label' => 'التسكين', 'path' => '/scheduling', 'icon' => 'far fa-calendar-check', 'permission' => 'scheduling'] : null,
+            in_array($schedulingViewMode, ['grid', 'both']) ? ['label' => 'التسكين الرسومي', 'path' => '/grid-scheduling', 'icon' => 'fas fa-th', 'permission' => 'scheduling'] : null,
             ['label' => 'التسكين الإداري', 'path' => '/admin-scheduling', 'icon' => 'fas fa-user-shield', 'permission' => 'scheduling_admin'],
             ['label' => 'إدارة الأولوية', 'path' => '/priority', 'icon' => 'fas fa-sort-amount-up', 'permission' => 'priority'],
             ['label' => 'الجدول الدراسي', 'path' => '/timetable', 'icon' => 'far fa-clock', 'permission' => 'timetable'],
@@ -187,9 +189,11 @@ foreach ($accountLinks as $link) {
 
     <div class="sidebar sidebar-rebuild-scroll">
         <nav class="sidebar-rebuild-nav mt-2">
-            <ul class="nav nav-sidebar nav-child-indent flex-column" data-widget="treeview" data-accordion="false" role="menu">
+            <ul class="nav nav-sidebar nav-child-indent flex-column" data-widget="treeview" data-accordion="false"
+                role="menu">
                 <li class="nav-item">
-                    <a href="<?= url('/dashboard') ?>" class="nav-link sidebar-rebuild-link <?= $matchesRoute('/dashboard') ? 'active' : '' ?>">
+                    <a href="<?= url('/dashboard') ?>"
+                        class="nav-link sidebar-rebuild-link <?= $matchesRoute('/dashboard') ? 'active' : '' ?>">
                         <span class="sidebar-rebuild-icon"><i class="fas fa-th-large"></i></span>
                         <p>لوحة التحكم</p>
                     </a>
@@ -202,7 +206,8 @@ foreach ($accountLinks as $link) {
                     ?>
                     <li class="nav-header sidebar-rebuild-header"><?= e($section['header']) ?></li>
                     <li class="nav-item has-treeview <?= $sectionOpen ? 'menu-open' : '' ?>">
-                        <a href="#" class="nav-link sidebar-rebuild-link sidebar-rebuild-parent <?= $sectionOpen ? 'active' : '' ?>">
+                        <a href="#"
+                            class="nav-link sidebar-rebuild-link sidebar-rebuild-parent <?= $sectionOpen ? 'active' : '' ?>">
                             <span class="sidebar-rebuild-icon"><i class="<?= e($section['icon']) ?>"></i></span>
                             <p>
                                 <?= e($section['title']) ?>
@@ -213,7 +218,8 @@ foreach ($accountLinks as $link) {
                         <ul class="nav nav-treeview sidebar-rebuild-tree">
                             <?php foreach ($section['items'] as $item): ?>
                                 <li class="nav-item">
-                                    <a href="<?= url($item['path']) ?>" class="nav-link sidebar-rebuild-link <?= $matchesRoute($item['path']) ? 'active' : '' ?>">
+                                    <a href="<?= url($item['path']) ?>"
+                                        class="nav-link sidebar-rebuild-link <?= $matchesRoute($item['path']) ? 'active' : '' ?>">
                                         <span class="sidebar-rebuild-icon"><i class="<?= e($item['icon']) ?>"></i></span>
                                         <p><?= e($item['label']) ?></p>
                                     </a>
@@ -228,7 +234,8 @@ foreach ($accountLinks as $link) {
                     <?php foreach ($visibleAccountLinks as $link): ?>
                         <?php $linkClass = $link['class'] ?? ''; ?>
                         <li class="nav-item">
-                            <a href="<?= url($link['path']) ?>" class="nav-link sidebar-rebuild-link <?= $matchesRoute($link['path']) ? 'active' : '' ?> <?= e($linkClass) ?>">
+                            <a href="<?= url($link['path']) ?>"
+                                class="nav-link sidebar-rebuild-link <?= $matchesRoute($link['path']) ? 'active' : '' ?> <?= e($linkClass) ?>">
                                 <span class="sidebar-rebuild-icon"><i class="<?= e($link['icon']) ?>"></i></span>
                                 <p><?= e($link['label']) ?></p>
                             </a>
