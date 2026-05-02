@@ -125,7 +125,8 @@ class SchedulingController extends \Controller
         $data['created_by'] = $this->session->userId();
         $data['status'] = 'مسودة';
 
-        $result = SchedulingService::storeEntry($data);
+        $ctx = SchedulingService::getCurrentContext();
+        $result = SchedulingService::storeEntry($data, $ctx['semester_id'], $ctx['academic_year_id']);
 
         if (!$result['success']) {
             $msg = 'تعارض في التسكين: ' . implode(' | ', $result['conflicts']);
@@ -202,20 +203,17 @@ class SchedulingController extends \Controller
             }
         }
 
-        // Check conflicts (excluding current entry)
-        $conflicts = SchedulingService::checkConflicts(
-            (int)$data['classroom_id'],
-            (int)$data['session_id'],
-            (int)$data['member_course_id'],
-            (int)$id
+        // Atomic: check conflicts + update in single transaction
+        $ctx = SchedulingService::getCurrentContext();
+        $result = SchedulingService::updateEntry(
+            (int)$id, $data, $ctx['semester_id'], $ctx['academic_year_id']
         );
 
-        if ($conflicts) {
-            $msg = 'تعارض في التسكين: ' . implode(' | ', $conflicts);
+        if (!$result['success']) {
+            $msg = 'تعارض في التسكين: ' . implode(' | ', $result['conflicts']);
             $this->redirect("/scheduling/{$id}/edit", $msg, 'error');
         }
 
-        Timetable::updateById((int)$id, $data);
         AuditService::log('UPDATE', 'timetable', (int)$id, $entry, $data);
 
         $this->redirect('/scheduling', 'تم تحديث المحاضرة في الجدول بنجاح ✓');

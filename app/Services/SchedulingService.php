@@ -219,6 +219,52 @@ class SchedulingService
     }
 
     /**
+     * Atomically check conflicts then update — prevents race conditions.
+     */
+    public static function updateEntry(int $timetableId, array $data, ?int $semesterId = null, ?int $academicYearId = null): array
+    {
+        $db = \Database::getInstance();
+        try {
+            $db->beginTransaction();
+            $db->fetch("SELECT 1 FROM timetable WHERE session_id = ? FOR UPDATE", [(int)$data['session_id']]);
+
+            $conflicts = self::checkConflicts(
+                (int)$data['classroom_id'], (int)$data['session_id'],
+                (int)$data['member_course_id'], $timetableId, $semesterId, $academicYearId
+            );
+
+            if (!empty($conflicts)) {
+                $db->rollback();
+                return ['success' => false, 'conflicts' => $conflicts];
+            }
+
+            \App\Models\Timetable::updateById($timetableId, $data);
+            $db->commit();
+            return ['success' => true, 'conflicts' => []];
+        } catch (\Throwable $e) {
+            $db->rollback();
+            error_log('SchedulingService::updateEntry error: ' . $e->getMessage());
+            return ['success' => false, 'conflicts' => ['خطأ داخلي أثناء التحديث']];
+        }
+    }
+
+    /**
+     * Get current semester_id and academic_year_id from DB.
+     */
+    public static function getCurrentContext(): array
+    {
+        $db = \Database::getInstance();
+        $result = ['semester_id' => null, 'academic_year_id' => null];
+        try {
+            $year = $db->fetch("SELECT id FROM academic_years WHERE is_current = 1 LIMIT 1");
+            if ($year) $result['academic_year_id'] = (int)$year['id'];
+            $sem = $db->fetch("SELECT id FROM semesters WHERE is_current = 1 LIMIT 1");
+            if ($sem) $result['semester_id'] = (int)$sem['id'];
+        } catch (\Throwable $e) {}
+        return $result;
+    }
+
+    /**
      * Pass scheduling role to next faculty member.
      */
     public static function passRole(int $currentMemberId): bool

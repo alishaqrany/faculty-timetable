@@ -163,7 +163,8 @@ class GridSchedulingController extends \Controller
         $data['created_by'] = $this->session->userId();
         $data['status'] = 'مسودة';
 
-        $result = SchedulingService::storeEntry($data);
+        $ctx = SchedulingService::getCurrentContext();
+        $result = SchedulingService::storeEntry($data, $ctx['semester_id'], $ctx['academic_year_id']);
 
         if (!$result['success']) {
             $this->json([
