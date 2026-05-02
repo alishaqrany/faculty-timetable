@@ -771,7 +771,11 @@ body.app-modern-theme .main-header.navbar {
     margin: 0.5rem 0.85rem 0;
     min-height: 58px;
     padding: 0.32rem 0.7rem;
-    z-index: 1030;
+    z-index: 1040;
+}
+
+body.app-modern-theme .main-header .dropdown-menu {
+    z-index: 1050;
 }
 
 body.app-modern-theme .main-header .navbar-nav .nav-link {

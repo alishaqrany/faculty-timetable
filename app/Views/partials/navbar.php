@@ -17,7 +17,7 @@
                     <span class="badge badge-warning navbar-badge"><?= $notifications_count ?></span>
                 <?php endif; ?>
             </a>
-            <div class="dropdown-menu dropdown-menu-lg dropdown-menu-left">
+            <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right" style="z-index: 10000;">
                 <span class="dropdown-item dropdown-header">الإشعارات</span>
                 <?php if (($notifications_count ?? 0) > 0): ?>
                     <a href="<?= url('/notifications') ?>" class="dropdown-item text-center">
@@ -37,7 +37,7 @@
                 <i class="fas fa-user-circle"></i>
                 <span class="mx-1 d-none d-sm-inline"><?= e($auth['username'] ?? 'المستخدم') ?></span>
             </a>
-            <div class="dropdown-menu dropdown-menu-left">
+            <div class="dropdown-menu dropdown-menu-right" style="z-index: 10000;">
                 <a href="<?= url('/profile') ?>" class="dropdown-item">
                     <i class="fas fa-user ml-2"></i> الملف الشخصي
                 </a>
