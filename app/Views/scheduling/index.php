@@ -45,50 +45,39 @@ $priorityLabel = $priorityState['mode_label'] ?? 'معطل';
 </div>
 <?php endif; ?>
 
-<!-- Status Banner -->
-<?php if ($canSchedule): ?>
-<div class="alert alert-success d-flex flex-wrap align-items-center justify-content-between">
-    <div class="mb-2 mb-sm-0">
-        <i class="fas fa-check-circle ml-1"></i> <strong>دورك الآن!</strong> يمكنك إضافة محاضراتك في الجدول.
+<!-- Status Banner (only for faculty members, not admin) -->
+<?php if (!$isAdmin || !empty($myCourses)): ?>
+    <?php if ($canSchedule): ?>
+    <div class="alert alert-success d-flex flex-wrap align-items-center justify-content-between">
+        <div class="mb-2 mb-sm-0">
+            <i class="fas fa-check-circle ml-1"></i> <strong>دورك الآن!</strong> يمكنك إضافة محاضراتك في الجدول.
+        </div>
+        <?php if ($priorityMode === 'disabled'): ?>
+        <form method="POST" action="<?= url('/scheduling/pass-role') ?>" class="m-0">
+            <?= csrf_field() ?>
+            <button type="submit" class="btn btn-outline-dark btn-sm" onclick="return confirm('هل تريد تمرير الدور للعضو التالي؟')">
+                <i class="fas fa-forward ml-1"></i> تمرير الدور
+            </button>
+        </form>
+        <?php endif; ?>
     </div>
-    <?php if ($priorityMode === 'disabled'): ?>
-    <form method="POST" action="<?= url('/scheduling/pass-role') ?>" class="m-0">
-        <?= csrf_field() ?>
-        <button type="submit" class="btn btn-outline-dark btn-sm" onclick="return confirm('هل تريد تمرير الدور للعضو التالي؟')">
-            <i class="fas fa-forward ml-1"></i> تمرير الدور
-        </button>
-    </form>
-    <?php endif; ?>
-</div>
-<?php else: ?>
-<div class="alert alert-warning">
-    <i class="fas fa-clock ml-1"></i>
-    <?php if ($priorityMode !== 'disabled'): ?>
-        ليس دورك حالياً بحسب نظام الأولوية. يمكنك عرض محاضراتك المسجلة فقط.
     <?php else: ?>
-        ليس دورك حالياً. يمكنك عرض محاضراتك المسجلة فقط.
+    <div class="alert alert-warning">
+        <i class="fas fa-clock ml-1"></i>
+        <?php if ($priorityMode !== 'disabled'): ?>
+            ليس دورك حالياً بحسب نظام الأولوية. يمكنك عرض محاضراتك المسجلة فقط.
+        <?php else: ?>
+            ليس دورك حالياً. يمكنك عرض محاضراتك المسجلة فقط.
+        <?php endif; ?>
+    </div>
     <?php endif; ?>
-</div>
 <?php endif; ?>
 
 <?php if ($isAdmin && empty($myCourses)): ?>
-<!-- Admin-specific guidance banner -->
-<div class="alert alert-info border-0 d-flex flex-wrap align-items-center justify-content-between" style="background: #e8f4fd; border-right: 4px solid #2196F3 !important; color: #0c5460;">
-    <div class="mb-2 mb-sm-0 d-flex align-items-center">
-        <i class="fas fa-info-circle ml-2" style="font-size: 1.4rem; color: #2196F3;"></i>
-        <strong style="font-size: 1.1rem;">أنت تتصفح كمدير نظام</strong>
-    </div>
-    <div class="d-flex flex-wrap" style="gap: 0.5rem;">
-        <a href="<?= url('/admin-scheduling') ?>" class="btn btn-primary btn-sm" style="text-decoration: none;">
-            <i class="fas fa-user-shield ml-1"></i> التسكين الإداري
-        </a>
-        <a href="<?= url('/grid-scheduling') ?>" class="btn btn-info btn-sm text-white" style="text-decoration: none;">
-            <i class="fas fa-th ml-1"></i> التسكين الشبكي
-        </a>
-        <a href="<?= url('/timetable') ?>" class="btn btn-dark btn-sm" style="text-decoration: none;">
-            <i class="far fa-clock ml-1"></i> عرض الجدول الكامل
-        </a>
-    </div>
+<!-- Admin-specific guidance -->
+<div class="callout callout-info" style="border-right-color: #2196F3;">
+    <h5 class="mb-1"><i class="fas fa-user-shield ml-1"></i> أنت تتصفح كمدير نظام</h5>
+    <p class="mb-0 text-muted" style="font-size: .9rem;">يمكنك تسكين المحاضرات نيابة عن الأعضاء من صفحة <a href="<?= url('/admin-scheduling') ?>">التسكين الإداري</a> أو من <a href="<?= url('/grid-scheduling') ?>">التسكين الشبكي</a>.</p>
 </div>
 <?php endif; ?>
 
@@ -205,7 +194,7 @@ $priorityLabel = $priorityState['mode_label'] ?? 'معطل';
 <div id="schedulingResults">
 <div class="card">
     <div class="card-header">
-        <h3 class="card-title"><i class="fas fa-list ml-1"></i> محاضراتي في الجدول (<span id="entriesCount"><?= count($myEntries) ?></span>)</h3>
+        <h3 class="card-title"><i class="fas fa-list ml-1"></i> <?= $isAdmin && empty($myCourses) ? 'نظرة عامة على الجدول' : 'محاضراتي في الجدول' ?> (<span id="entriesCount"><?= count($myEntries) ?></span>)</h3>
     </div>
     <div class="card-body table-responsive p-0" id="entriesTableContainer">
         <?php if (!empty($myEntries)): ?>
@@ -236,7 +225,16 @@ $priorityLabel = $priorityState['mode_label'] ?? 'معطل';
             </tbody>
         </table>
         <?php else: ?>
+        <?php if ($isAdmin && empty($myCourses)): ?>
+        <div class="text-center p-5">
+            <i class="fas fa-clipboard-list text-muted" style="font-size: 3rem; opacity: .4;"></i>
+            <p class="text-muted mt-3 mb-2">هذه الصفحة مخصصة لأعضاء هيئة التدريس لتسكين محاضراتهم</p>
+            <a href="<?= url('/admin-scheduling') ?>" class="btn btn-primary btn-sm" style="text-decoration: none;"><i class="fas fa-user-shield ml-1"></i> التسكين الإداري</a>
+            <a href="<?= url('/timetable') ?>" class="btn btn-outline-secondary btn-sm mr-2" style="text-decoration: none;"><i class="far fa-clock ml-1"></i> عرض الجدول</a>
+        </div>
+        <?php else: ?>
         <p class="text-center text-muted p-4">لا توجد محاضرات مسجلة حالياً</p>
+        <?php endif; ?>
         <?php endif; ?>
     </div>
 </div>
