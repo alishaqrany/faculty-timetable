@@ -188,6 +188,20 @@ foreach ($accountLinks as $link) {
     </a>
 
     <div class="sidebar sidebar-rebuild-scroll">
+        <!-- User Profile -->
+        <div class="sidebar-rebuild-profile">
+            <span class="sidebar-rebuild-avatar" aria-hidden="true">
+                <?= mb_substr($auth['username'] ?? 'U', 0, 1, 'UTF-8') ?>
+            </span>
+            <div class="sidebar-rebuild-user">
+                <a href="<?= url('/profile') ?>"><?= e($auth['username'] ?? 'المستخدم') ?></a>
+                <span><?php
+                    $roleLabels = ['admin' => 'مدير النظام', 'dept_head' => 'رئيس قسم', 'faculty' => 'عضو هيئة تدريس', 'viewer' => 'مشاهد'];
+                    echo e($roleLabels[$auth['role'] ?? ''] ?? ($auth['role'] ?? ''));
+                ?></span>
+            </div>
+        </div>
+
         <nav class="sidebar-rebuild-nav mt-2">
             <ul class="nav nav-sidebar nav-child-indent flex-column" data-widget="treeview" data-accordion="false"
                 role="menu">
