@@ -72,11 +72,16 @@ body {
         width: var(--sidebar-collapsed-width) !important;
     }
 
+    /* Hover: expand sidebar as overlay */
     .sidebar-mini.sidebar-collapse .main-sidebar:hover,
-    .sidebar-mini.sidebar-collapse .main-sidebar.sidebar-focused,
+    .sidebar-mini.sidebar-collapse .main-sidebar.sidebar-focused {
+        width: var(--sidebar-width) !important;
+        box-shadow: -8px 0 30px rgba(0,0,0,.18) !important;
+        z-index: 9999;
+    }
     .sidebar-mini.sidebar-collapse .main-sidebar:hover::before,
     .sidebar-mini.sidebar-collapse .main-sidebar.sidebar-focused::before {
-        width: var(--sidebar-collapsed-width) !important;
+        width: var(--sidebar-width) !important;
     }
 
     .sidebar-mini.sidebar-collapse .content-wrapper,
@@ -86,12 +91,25 @@ body {
         margin-left: 0 !important;
     }
 
+    /* Collapsed: hide text elements */
     .sidebar-mini.sidebar-collapse .main-sidebar.sidebar-rebuild-v3 .sidebar-rebuild-brand-text,
     .sidebar-mini.sidebar-collapse .main-sidebar.sidebar-rebuild-v3 .sidebar-rebuild-user,
     .sidebar-mini.sidebar-collapse .main-sidebar.sidebar-rebuild-v3 .sidebar-rebuild-header,
     .sidebar-mini.sidebar-collapse .main-sidebar.sidebar-rebuild-v3 .nav-link p,
     .sidebar-mini.sidebar-collapse .main-sidebar.sidebar-rebuild-v3 .nav-treeview {
         display: none !important;
+    }
+
+    /* Hover: show text elements again */
+    .sidebar-mini.sidebar-collapse .main-sidebar:hover .sidebar-rebuild-brand-text,
+    .sidebar-mini.sidebar-collapse .main-sidebar:hover .sidebar-rebuild-user,
+    .sidebar-mini.sidebar-collapse .main-sidebar:hover .sidebar-rebuild-header,
+    .sidebar-mini.sidebar-collapse .main-sidebar:hover .nav-link p,
+    .sidebar-mini.sidebar-collapse .main-sidebar:hover .nav-treeview {
+        display: flex !important;
+    }
+    .sidebar-mini.sidebar-collapse .main-sidebar:hover .sidebar-rebuild-header {
+        display: block !important;
     }
 
     .sidebar-mini.sidebar-collapse .main-sidebar.sidebar-rebuild-v3 .sidebar-rebuild-brand,
@@ -102,8 +120,21 @@ body {
         padding-left: 0.55rem !important;
     }
 
+    /* Hover: restore normal padding */
+    .sidebar-mini.sidebar-collapse .main-sidebar:hover .sidebar-rebuild-brand,
+    .sidebar-mini.sidebar-collapse .main-sidebar:hover .sidebar-rebuild-profile,
+    .sidebar-mini.sidebar-collapse .main-sidebar:hover .nav-link {
+        justify-content: flex-start;
+        padding-right: 0.7rem !important;
+        padding-left: 0.7rem !important;
+    }
+
     .sidebar-mini.sidebar-collapse .main-sidebar.sidebar-rebuild-v3 .sidebar-rebuild-icon {
         margin-left: 0 !important;
+    }
+
+    .sidebar-mini.sidebar-collapse .main-sidebar:hover .sidebar-rebuild-icon {
+        margin-left: 0.62rem !important;
     }
 }
 
@@ -651,25 +682,43 @@ body.app-modern-theme .main-sidebar::before {
         width: var(--sidebar-collapsed-width) !important;
     }
 
+    /* Hover: expand to full width as overlay */
     body.app-modern-theme.sidebar-mini.sidebar-collapse .main-sidebar:hover,
-    body.app-modern-theme.sidebar-mini.sidebar-collapse .main-sidebar.sidebar-focused,
+    body.app-modern-theme.sidebar-mini.sidebar-collapse .main-sidebar.sidebar-focused {
+        width: var(--sidebar-width) !important;
+        box-shadow: -8px 0 30px rgba(0,0,0,.18) !important;
+    }
     body.app-modern-theme.sidebar-mini.sidebar-collapse .main-sidebar:hover::before,
     body.app-modern-theme.sidebar-mini.sidebar-collapse .main-sidebar.sidebar-focused::before {
-        width: var(--sidebar-collapsed-width) !important;
+        width: var(--sidebar-width) !important;
     }
 
     body.app-modern-theme.sidebar-mini.sidebar-collapse .main-header,
     body.app-modern-theme.sidebar-mini.sidebar-collapse .main-footer,
     body.app-modern-theme.sidebar-mini.sidebar-collapse .content-wrapper {
         margin-right: var(--sidebar-collapsed-width) !important;
+        margin-left: 0 !important;
     }
 
+    /* Collapsed: hide text */
     body.app-modern-theme.sidebar-mini.sidebar-collapse .main-sidebar.sidebar-rebuild-v3 .sidebar-rebuild-brand-text,
     body.app-modern-theme.sidebar-mini.sidebar-collapse .main-sidebar.sidebar-rebuild-v3 .sidebar-rebuild-user,
     body.app-modern-theme.sidebar-mini.sidebar-collapse .main-sidebar.sidebar-rebuild-v3 .nav-sidebar .nav-link p,
     body.app-modern-theme.sidebar-mini.sidebar-collapse .main-sidebar.sidebar-rebuild-v3 .nav-treeview,
     body.app-modern-theme.sidebar-mini.sidebar-collapse .main-sidebar.sidebar-rebuild-v3 .sidebar-rebuild-header {
         display: none !important;
+    }
+
+    /* Hover: show text again */
+    body.app-modern-theme.sidebar-mini.sidebar-collapse .main-sidebar:hover .sidebar-rebuild-brand-text,
+    body.app-modern-theme.sidebar-mini.sidebar-collapse .main-sidebar:hover .sidebar-rebuild-user,
+    body.app-modern-theme.sidebar-mini.sidebar-collapse .main-sidebar:hover .nav-sidebar .nav-link p,
+    body.app-modern-theme.sidebar-mini.sidebar-collapse .main-sidebar:hover .nav-treeview,
+    body.app-modern-theme.sidebar-mini.sidebar-collapse .main-sidebar:hover .sidebar-rebuild-header {
+        display: flex !important;
+    }
+    body.app-modern-theme.sidebar-mini.sidebar-collapse .main-sidebar:hover .sidebar-rebuild-header {
+        display: block !important;
     }
 }
 
